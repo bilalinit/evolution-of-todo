@@ -1,0 +1,336 @@
+# OpenAPI Specification: CLI Todo Application
+# Note: This represents the API contract that will be used in Phase II (Web)
+# Phase I CLI will use the same core logic but CLI interface
+
+openapi: 3.0.3
+info:
+  title: Todo Application API
+  version: 1.0.0
+  description: |
+    Task management API for the Evolution of Todo system.
+
+    **Phase I**: CLI application with local SQLite database
+    **Phase II**: Web application with Neon PostgreSQL
+    **Phase III**: AI Agent integration via MCP
+
+    All endpoints enforce user scoping via authentication.
+
+servers:
+  - url: http://localhost:8000
+    description: Development server (Phase II)
+  - url: https://api.todo.evolution.local
+    description: Production server (Phase II+)
+
+paths:
+  # Task Management
+  /api/tasks:
+    get:
+      summary: List all tasks for current user
+      operationId: listTasks
+      tags:
+        - Tasks
+      parameters:
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Filter by completion status
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a new task
+      operationId: createTask
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/tasks/{taskId}:
+    get:
+      summary: Get task by ID
+      operationId: getTask
+      tags:
+        - Tasks
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update task
+      operationId: updateTask
+      tags:
+        - Tasks
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete task
+      operationId: deleteTask
+      tags:
+        - Tasks
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Task deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/tasks/{taskId}/toggle:
+    post:
+      summary: Toggle task completion status
+      operationId: toggleTask
+      tags:
+        - Tasks
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # User Management (Phase II+)
+  /api/users/me:
+    get:
+      summary: Get current user profile
+      operationId: getCurrentUser
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    # Task Models
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Buy groceries"
+      description: "Create a new task. Title is automatically trimmed."
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Buy organic groceries"
+      description: "Update task title. Empty title is rejected."
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        title:
+          type: string
+          example: "Buy groceries"
+        completed:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-28T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-12-28T10:30:00Z"
+
+    TaskListResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskResponse'
+        total:
+          type: integer
+          example: 5
+        completed_count:
+          type: integer
+          example: 2
+        pending_count:
+          type: integer
+          example: 3
+
+    # User Models
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+
+    # Error Models
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          nullable: true
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    BadRequest:
+      description: Bad Request - Invalid input data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Not Found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

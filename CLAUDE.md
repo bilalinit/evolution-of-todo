@@ -205,6 +205,31 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 - `history/prompts/` — Prompt History Records
 - `history/adr/` — Architecture Decision Records
 - `.specify/` — SpecKit Plus templates and scripts
+- `.claude/skills/` — Specialized skills for different domains
+
+## Available Skills
+
+### Backend Skill (Python & UV)
+Located at `.claude/skills/backend/`
+
+**When to use**: Python backend development, dependency management, project initialization with UV package manager.
+
+**Key capabilities**:
+- **Project Initialization**: Smart `uv init --package backend` (handles existing vs new folders)
+- **Dependency Management**: `uv add`, `uv remove`, `uv sync`
+- **Virtual Environments**: Automatic venv management via `uv`
+- **Execution**: `uv run` for scripts and servers
+
+**Usage patterns**:
+- New project: `uv init --package backend` (if no backend folder exists)
+- Existing folder: `cd backend && uv init --package` (if backend folder exists)
+- Add dependencies: `uv add <package>`
+- Run scripts: `uv run python main.py`
+
+**Prohibited**: Never use `pip install`, `python -m venv`, or `poetry` - always use `uv`.
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Recent Changes
+- 001-cli-todo: Added Python 3.13+, SQLModel, SQLite, Pydantic, pytest, ruff, mypy for CLI todo application
