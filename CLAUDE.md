@@ -232,4 +232,9 @@ Located at `.claude/skills/backend/`
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 002-cli-menu-ui: Added Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors)
 - 001-cli-todo: Added Python 3.13+, SQLModel, SQLite, Pydantic, pytest, ruff, mypy for CLI todo application
+
+## Active Technologies
+- Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors) (002-cli-menu-ui)
+- SQLite (current), PostgreSQL-ready (future) (002-cli-menu-ui)

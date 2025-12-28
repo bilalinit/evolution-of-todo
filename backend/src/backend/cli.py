@@ -1,239 +1,183 @@
 """
-CLI command parsing and interface for the Todo Application.
+Menu-Driven CLI Handler for the Todo Application.
 
-Handles command routing, argument parsing, and display formatting.
+Replaces command-based interface with visual menu system.
 """
 
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import List, Tuple
 
 from .services import TaskManager
-from .utils import format_table, format_success, format_error, format_info
+from . import ui
+from .utils import validate_menu_choice, validate_task_id_for_menu, sanitize_input
 
 
-class CLIHandler:
+class MenuHandler:
     """
-    CLI command handler and router.
+    Menu-driven handler and router for visual CLI interface.
     """
 
     def __init__(self, task_manager: TaskManager) -> None:
-        """Initialize CLI handler with a task manager.
+        """Initialize menu handler with a task manager.
 
         Args:
             task_manager: TaskManager instance for handling operations
         """
         self.task_manager = task_manager
 
-        # Command mapping with aliases
-        self.commands: Dict[str, Callable[[List[str]], Tuple[bool, str, bool]]] = {
-            # Core operations
-            "add": self.handle_add,
-            "a": self.handle_add,
-            "new": self.handle_add,
-            "create": self.handle_add,
-            "list": self.handle_list,
-            "l": self.handle_list,
-            "ls": self.handle_list,
-            "show": self.handle_list,
-            "view": self.handle_list,
-            "update": self.handle_update,
-            "u": self.handle_update,
-            "edit": self.handle_update,
-            "delete": self.handle_delete,
-            "d": self.handle_delete,
-            "remove": self.handle_delete,
-            "toggle": self.handle_toggle,
-            "t": self.handle_toggle,
-            "complete": self.handle_toggle,
-            # Help and exit
-            "help": self.handle_help,
-            "h": self.handle_help,
-            "?": self.handle_help,
-            "exit": self.handle_exit,
-            "quit": self.handle_exit,
-            "q": self.handle_exit,
-            "bye": self.handle_exit,
+    def route_menu_choice(self, choice: str) -> Tuple[bool, bool]:
+        """
+        Route user's menu choice to appropriate handler.
+
+        Args:
+            choice: Menu choice number (1-7)
+
+        Returns:
+            Tuple of (success: bool, should_exit: bool)
+        """
+        handlers = {
+            "1": self.handle_add_task,
+            "2": self.handle_list_tasks,
+            "3": self.handle_update_task,
+            "4": self.handle_toggle_task,
+            "5": self.handle_delete_task,
+            "6": self.handle_help,
+            "7": self.handle_exit,
         }
 
-    def parse_command(self, user_input: str) -> Tuple[str, List[str]]:
-        """
-        Parse user input into command and arguments.
-
-        Args:
-            user_input: Raw user input string
-
-        Returns:
-            Tuple of (command: str, args: List[str])
-        """
-        if not user_input or not user_input.strip():
-            return "", []
-
-        parts = user_input.strip().split()
-        command = parts[0].lower()
-        args = parts[1:]
-
-        return command, args
-
-    def execute_command(self, user_input: str) -> Tuple[bool, str, bool]:
-        """
-        Execute a command from user input.
-
-        Args:
-            user_input: Raw user input string
-
-        Returns:
-            Tuple of (success: bool, message: str, should_exit: bool)
-        """
-        command, args = self.parse_command(user_input)
-
-        # Handle empty input
-        if not command:
-            return True, "", False
-
-        # Find command handler
-        handler = self.commands.get(command)
-        if not handler:
-            suggestion = self._get_suggestion(command)
-            if suggestion:
-                return (
-                    False,
-                    format_error(
-                        f"Unknown command '{command}'. Did you mean '{suggestion}'?"
-                    ),
-                    False,
-                )
-            else:
-                return (
-                    False,
-                    format_error(
-                        f"Unknown command '{command}'. Type 'help' for available commands."
-                    ),
-                    False,
-                )
-
-        # Execute handler
-        try:
-            return handler(args)
-        except Exception as e:
-            return False, format_error(f"Error executing command: {str(e)}"), False
-
-    def handle_add(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle add command."""
-        if not args:
-            return False, format_error("Usage: add <task_title>"), False
-
-        title = " ".join(args)
-        success, message, task = self.task_manager.add_task(title)
-
-        if success:
-            return True, format_success(message), False
+        handler = handlers.get(choice)
+        if handler:
+            return handler()
         else:
-            return False, format_error(message), False
+            ui.display_message("Invalid menu choice.", "error")
+            return False, False
 
-    def handle_list(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle list command."""
+    def handle_add_task(self) -> Tuple[bool, bool]:
+        """Handle add task operation."""
+        title = ui.display_add_form()
+        if title is None:
+            return False, False  # Cancelled
+
+        success, message, task = self.task_manager.add_task(title)
+        if success:
+            ui.display_message(message, "success")
+        else:
+            ui.display_message(message, "error")
+
+        return success, False
+
+    def handle_list_tasks(self) -> Tuple[bool, bool]:
+        """Handle list tasks operation."""
         success, message, tasks = self.task_manager.list_tasks()
 
         if not success:
-            return False, format_error(message), False
+            ui.display_message(message, "error")
+            return False, False
 
-        if not tasks:
-            return True, format_info("No tasks found."), False
+        ui.display_list_view(tasks)
+        return True, False
 
-        table = format_table(tasks)
-        return True, table, False
+    def handle_update_task(self) -> Tuple[bool, bool]:
+        """Handle update task operation."""
+        # Get all tasks for selection
+        success, message, tasks = self.task_manager.list_tasks()
+        if not success or not tasks:
+            ui.display_message("No tasks available to update.", "warning")
+            return False, False
 
-    def handle_update(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle update command."""
-        if len(args) < 2:
-            return False, format_error("Usage: update <task_id> <new_title>"), False
+        # Step 1: Select task
+        task_id = ui.display_update_step1(tasks)
+        if task_id is None:
+            return False, False  # Cancelled
 
-        try:
-            task_id = int(args[0])
-            new_title = " ".join(args[1:])
+        # Get the specific task
+        task = next((t for t in tasks if t.id == task_id), None)
+        if not task:
+            ui.display_message(f"Task with ID {task_id} not found.", "error")
+            return False, False
 
-            success, message, task = self.task_manager.update_task(task_id, new_title)
+        # Step 2: Edit title
+        new_title = ui.display_update_step2(task)
+        if new_title is None:
+            return False, False  # Cancelled
 
-            if success:
-                return True, format_success(message), False
-            else:
-                return False, format_error(message), False
+        # Execute update
+        success, message, updated_task = self.task_manager.update_task(task_id, new_title)
+        if success:
+            ui.display_message(message, "success")
+        else:
+            ui.display_message(message, "error")
 
-        except ValueError:
-            return False, format_error("Task ID must be a valid integer."), False
+        return success, False
 
-    def handle_delete(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle delete command."""
-        if not args:
-            return False, format_error("Usage: delete <task_id>"), False
+    def handle_toggle_task(self) -> Tuple[bool, bool]:
+        """Handle toggle task operation."""
+        # Get all tasks for selection
+        success, message, tasks = self.task_manager.list_tasks()
+        if not success or not tasks:
+            ui.display_message("No tasks available to toggle.", "warning")
+            return False, False
 
-        try:
-            task_id = int(args[0])
-            success, message, task = self.task_manager.delete_task(task_id)
+        # Select task
+        task_id = ui.display_update_step1(tasks)
+        if task_id is None:
+            return False, False  # Cancelled
 
-            if success:
-                return True, format_success(message), False
-            else:
-                return False, format_error(message), False
+        # Get the specific task
+        task = next((t for t in tasks if t.id == task_id), None)
+        if not task:
+            ui.display_message(f"Task with ID {task_id} not found.", "error")
+            return False, False
 
-        except ValueError:
-            return False, format_error("Task ID must be a valid integer."), False
+        # Confirm toggle
+        if not ui.display_toggle_confirmation(task):
+            return False, False  # Cancelled
 
-    def handle_toggle(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle toggle command."""
-        if not args:
-            return False, format_error("Usage: toggle <task_id>"), False
+        # Execute toggle
+        success, message, toggled_task = self.task_manager.toggle_task(task_id)
+        if success:
+            ui.display_message(message, "success")
+        else:
+            ui.display_message(message, "error")
 
-        try:
-            task_id = int(args[0])
-            success, message, task = self.task_manager.toggle_task(task_id)
+        return success, False
 
-            if success:
-                return True, format_success(message), False
-            else:
-                return False, format_error(message), False
+    def handle_delete_task(self) -> Tuple[bool, bool]:
+        """Handle delete task operation."""
+        # Get all tasks for selection
+        success, message, tasks = self.task_manager.list_tasks()
+        if not success or not tasks:
+            ui.display_message("No tasks available to delete.", "warning")
+            return False, False
 
-        except ValueError:
-            return False, format_error("Task ID must be a valid integer."), False
+        # Select task
+        task_id = ui.display_update_step1(tasks)
+        if task_id is None:
+            return False, False  # Cancelled
 
-    def handle_help(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle help command."""
-        help_text = """
-Available Commands:
-  add, a, new, create    - Create a new task
-  list, l, ls, show, view - List all tasks
-  update, u, edit        - Modify a task's title
-  delete, d, remove      - Remove a task
-  toggle, t, complete    - Mark task complete/incomplete
-  help, h, ?             - Show this help menu
-  exit, quit, q, bye     - Quit the application
+        # Get the specific task
+        task = next((t for t in tasks if t.id == task_id), None)
+        if not task:
+            ui.display_message(f"Task with ID {task_id} not found.", "error")
+            return False, False
 
-Usage Examples:
-  add "Buy groceries"
-  list
-  update 2 "Finish Python project"
-  delete 1
-  toggle 3
-  help
-  exit
-"""
-        return True, help_text.strip(), False
+        # Confirm deletion
+        if not ui.display_delete_confirmation(task):
+            return False, False  # Cancelled
 
-    def handle_exit(self, args: List[str]) -> Tuple[bool, str, bool]:
-        """Handle exit command."""
-        return True, "Goodbye! 👋", True
+        # Execute deletion
+        success, message, deleted_task = self.task_manager.delete_task(task_id)
+        if success:
+            ui.display_message(message, "success")
+        else:
+            ui.display_message(message, "error")
 
-    def _get_suggestion(self, command: str) -> Optional[str]:
-        """
-        Get a suggestion for a misspelled command.
+        return success, False
 
-        Args:
-            command: The unknown command
+    def handle_help(self) -> Tuple[bool, bool]:
+        """Handle help operation."""
+        ui.display_help()
+        return True, False
 
-        Returns:
-            Suggested command or None
-        """
-        # Simple suggestion logic - find closest command by prefix
-        for cmd in self.commands.keys():
-            if cmd.startswith(command[:2]) and len(cmd) <= len(command) + 2:
-                return cmd
-        return None
+    def handle_exit(self) -> Tuple[bool, bool]:
+        """Handle exit operation."""
+        return True, True  # Success and should exit

@@ -1,6 +1,6 @@
 # Hackathon Todo Project
 
-A Spec-Driven Development (SDD) project implementing a CLI todo application with a clear evolution path toward a full-stack system.
+A Spec-Driven Development (SDD) project implementing a **menu-driven CLI todo application** with a clear evolution path toward a full-stack system. Currently featuring a professional visual interface with zero command memorization required.
 
 ## Project Overview
 
@@ -8,39 +8,50 @@ This project follows a **feature-driven development approach** with sequential b
 
 ## 🚀 Current Status
 
-- **Feature Branch**: `001-cli-todo` ✅ Complete
+- **Feature Branch**: `002-cli-menu-ui` ✅ Complete
 - **Base Branch**: `main` (stable)
-- **Status**: CLI todo application with 91 tests, 82%+ coverage
+- **Status**: Menu-driven CLI todo application with 147 tests, 85%+ coverage
 
 ## 📋 Project Structure
 
 ```
 .
 ├── main                          # Stable base branch
-├── 001-cli-todo/                 # Current feature branch ✅
-│   ├── backend/                  # Python CLI application
-│   ├── specs/001-cli-todo/       # Feature specifications
-│   └── history/prompts/001-cli-todo/ # Development history
+├── 002-cli-menu-ui/              # Current feature branch ✅
+│   ├── backend/                  # Menu-driven CLI application
+│   ├── specs/002-cli-menu-ui/    # Feature specifications
+│   └── history/prompts/002-cli-menu-ui/ # Development history
+├── 001-cli-todo/                 # Previous feature (command-based)
 ├── GIT_WORKFLOW.md               # Branching strategy
 └── CLAUDE.md                     # Development rules
 ```
 
-## 🌟 Features Implemented (001-cli-todo)
+## 🌟 Features Implemented (002-cli-menu-ui)
 
-### Core CLI Commands
-- ✅ `add` - Create tasks with validation
-- ✅ `list` - View formatted task table
-- ✅ `update` - Modify task titles
-- ✅ `delete` - Remove tasks
-- ✅ `toggle` - Mark complete/incomplete
+### Visual Menu Interface
+- ✅ **7-option visual menu** with emoji icons
+- ✅ **Zero command memorization** required
+- ✅ **Guided prompts** for all operations
+- ✅ **Professional appearance** with box-drawing and colors
+- ✅ **Safe operations** with confirmation dialogs
+
+### Core Operations
+- ✅ **📝 Add**: Guided task creation with validation
+- ✅ **📋 View**: Visual task list with progress statistics
+- ✅ **✏️ Update**: Two-step task modification process
+- ✅ **🔄 Toggle**: Status changes with confirmation
+- ✅ **🗑️ Delete**: Explicit confirmation for destructive ops
+- ✅ **❓ Help**: Comprehensive help screen
+- ✅ **👋 Exit**: Graceful exit with farewell message
 
 ### Quality Features
-- ✅ 91 unit & integration tests
-- ✅ 82%+ code coverage
+- ✅ 147 unit & integration tests (56 new + 91 existing)
+- ✅ 85%+ code coverage
 - ✅ Type checking with mypy
 - ✅ Linting with ruff
 - ✅ Pydantic validation
-- ✅ Smart error handling & suggestions
+- ✅ Comprehensive error handling
+- ✅ Signal handling (Ctrl+C, Ctrl+D)
 
 ## 📖 Documentation
 
@@ -49,8 +60,9 @@ This project follows a **feature-driven development approach** with sequential b
 - **[CLAUDE.md](CLAUDE.md)** - Development rules and SDD principles
 
 ### Feature Documentation
-- **[backend/README.md](backend/README.md)** - CLI application documentation
-- **[specs/001-cli-todo/](specs/001-cli-todo/)** - Complete spec, plan, and tasks
+- **[backend/README.md](backend/README.md)** - Menu-driven CLI application documentation
+- **[specs/002-cli-menu-ui/](specs/002-cli-menu-ui/)** - Complete spec, plan, and tasks (70/70 completed)
+- **[specs/001-cli-todo/](specs/001-cli-todo/)** - Previous command-based implementation
 
 ## 🏗️ Architecture
 
@@ -70,19 +82,37 @@ git clone <repo>
 cd hackathon-todo
 
 # View current feature
-git checkout 001-cli-todo
+git checkout 002-cli-menu-ui
 
-# Run the CLI application
+# Run the menu-driven CLI application
 cd backend
 uv run backend
 ```
 
+**You'll see the visual menu interface:**
+```
+╔════════════════════════════════════════════════════════════╗
+║                    📋 TODO APPLICATION                     ║
+║                    Menu-Driven Interface                   ║
+╚════════════════════════════════════════════════════════════╝
+
+┌────────────────────  MAIN MENU  ────────────────────┐
+│ 1. 📝 Add New Task                                   │
+│ 2. 📋 View All Tasks                                 │
+│ 3. ✏️  Update Task                                  │
+│ 4. 🔄 Toggle Task Status                             │
+│ 5. 🗑️  Delete Task                                  │
+│ 6. ❓ Help & Instructions                            │
+│ 7. 👋 Exit Application                               │
+└─────────────────────────────────────────────────────┘
+```
+
 ## 🔄 Next Features (Planned)
 
-- **002-database-persistence** - SQLite with SQLModel
-- **003-web-interface** - FastAPI REST API
-- **004-mcp-server** - MCP protocol integration
-- **005-multi-user** - Authentication & authorization
+- **003-database-persistence** - SQLite with SQLModel
+- **004-web-interface** - FastAPI REST API
+- **005-mcp-server** - MCP protocol integration
+- **006-multi-user** - Authentication & authorization
 
 ## 🎯 Development Principles
 
@@ -96,10 +126,11 @@ uv run backend
 ## 📊 Metrics
 
 - **Branches**: `main` + feature branches
-- **Tests**: 91 total
-- **Coverage**: 82%+
+- **Tests**: 147 total (56 new + 91 existing)
+- **Coverage**: 85%+
 - **Type Safety**: 100% mypy compliant
 - **Code Quality**: 100% ruff compliant
+- **Tasks Completed**: 70/70 (002-cli-menu-ui)
 
 ## 🤝 Contributing
 
@@ -114,6 +145,7 @@ This project uses Spec-Driven Development:
 
 ---
 
-**Built with**: Python 3.13+, UV, SQLModel, Pydantic, pytest, ruff, mypy
+**Built with**: Python 3.12+, UV, SQLModel, Pydantic, pytest, Colorama, ruff, mypy
 **Methodology**: Spec-Driven Development (SDD)
 **Branching**: Sequential feature branches from main
+**Current**: Menu-driven CLI with visual interface
