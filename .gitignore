@@ -132,3 +132,30 @@ cython_debug/
 # PyCharm
 .idea/
 
+# Next.js (for phase-2/frontend)
+phase-2/frontend/node_modules/
+phase-2/frontend/.next/
+phase-2/frontend/out/
+phase-2/frontend/build/
+phase-2/frontend/dist/
+phase-2/frontend/.turbo/
+phase-2/frontend/coverage/
+phase-2/frontend/*.log
+phase-2/frontend/.env*.local
+phase-2/frontend/.vercel/
+phase-2/frontend/.sentryclirc
+phase-2/frontend/next-env.d.ts
+phase-2/frontend/.contentlayer/
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+
+# Sentry
+.sentryclirc
+
+# Contentlayer
+.contentlayer/
+
