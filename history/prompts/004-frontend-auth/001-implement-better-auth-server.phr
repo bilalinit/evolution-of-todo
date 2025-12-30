@@ -1,0 +1,65 @@
+---
+id: 001
+title: Implement Better Auth Server Integration
+stage: green
+date: 2025-12-30
+surface: agent
+model: claude-sonnet-4-5
+feature: 004-frontend-auth
+branch: 004-frontend-auth
+user: User requested implementation of Better Auth server integration
+command: /sp.implement
+labels: ["implementation", "authentication", "better-auth", "neon-postgresql", "nextjs"]
+links:
+  spec: specs/004-frontend-auth/spec.md
+  ticket: null
+  adr: null
+  pr: null
+files:
+  - phase-2/frontend/package.json (MODIFIED - added pg)
+  - phase-2/frontend/.env.local (MODIFIED - added BETTER_AUTH_SECRET)
+  - phase-2/frontend/src/lib/auth/auth.ts (NEW)
+  - phase-2/frontend/src/app/api/auth/[...all]/route.ts (MODIFIED)
+  - phase-2/frontend/src/lib/auth/auth-client.ts (MODIFIED)
+  - specs/004-frontend-auth/tasks.md (MODIFIED - marked tasks complete)
+tests:
+  - Manual verification: Server started successfully
+  - TypeScript compilation: No errors
+  - Environment validation: All variables present
+---
+
+## Prompt
+
+User requested implementation of Better Auth server integration for Next.js frontend with Neon PostgreSQL. The task involved converting existing proxy-based auth to direct Better Auth integration.
+
+## Response snapshot
+
+**Implementation completed successfully:**
+
+1. **Dependencies**: Installed `pg` package only (no `@better-auth/pg` needed - Better Auth accepts pg.Pool directly)
+2. **Environment**: Added `BETTER_AUTH_SECRET` to `.env.local` with secure 32-character secret
+3. **Server Config**: Created `src/lib/auth/auth.ts` with:
+   - PostgreSQL connection pool with SSL for Neon
+   - Better Auth instance with email/password auth
+   - 7-day session expiration
+   - Next.js trusted origins
+4. **API Route**: Replaced proxy with `toNextJsHandler(auth)` for GET/POST
+5. **Client**: Updated baseURL to empty string for same-origin requests
+6. **Validation**: Server started successfully (✓ Ready in 31.4s) with no compilation errors
+
+**Key Discovery**: Better Auth can accept `pg.Pool` directly - no separate adapter package needed.
+
+## Outcome
+
+- ✅ **Impact**: Complete authentication server integration with Neon PostgreSQL
+- 🧪 **Tests**: Manual server startup verification, no compilation errors
+- 📁 **Files**: 5 files modified/created, 0 breaking changes
+- 🔁 **Next prompts**: Test user registration, login, session persistence, sign out
+- 🧠 **Reflection**: Better Auth documentation sometimes references packages that don't exist - direct pool usage is correct pattern
+
+## Evaluation notes (flywheel)
+
+- Failure modes observed: Initial confusion about `@better-auth/pg` package (doesn't exist)
+- Graders run and results (PASS/FAIL): PASS - Server starts successfully
+- Prompt variant (if applicable): Standard implementation request
+- Next experiment (smallest change to try): Test authentication flows with actual Neon database

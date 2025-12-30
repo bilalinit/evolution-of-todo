@@ -294,13 +294,74 @@ Located at `.claude/skills/ui-animation/`
 
 **Required reading**: `MOTION_TOKENS.md`, `ANIMATION_PATTERNS.md`
 
+---
+
+### Better Auth Skill
+Located at `.claude/skills/better-auth/`
+
+**When to use**: Authentication implementation with Better Auth across various frameworks (Next.js, Express, React, Vue).
+
+**Key capabilities**:
+- **Server Instance**: `betterAuth({ ... })` - Core server-side configuration
+- **Client Instance**: `createAuthClient({ ... })` - Client-side interaction (Next.js only)
+- **Direct Fetch**: For separate frontends, use direct fetch with `credentials: 'include'`
+- **Secret Management**: `BETTER_AUTH_SECRET` and provider secrets
+- **Database**: Supports pg.Pool, SQLite, Prisma, and URL-based connections
+
+**Framework patterns**:
+- **Next.js**: Use `auth.handler` for API routes, `auth.middleware` for middleware
+- **Express/Node.js**: Use `toNodeHandler(auth)` for mounting, `fromNodeHeaders()` for session verification
+- **Separate Frontend**: Use direct fetch with `credentials: 'include'`
+
+**Common mistakes to avoid**:
+- Missing `credentials: 'include'` in frontend fetch calls
+- Wrong middleware order in Express (CORS → auth → body parsers)
+- Using `account.additionalFields` instead of `user.additionalFields`
+- Forgetting to run migrations (`npx @better-auth/cli migrate`)
+
+**Required reading**: `concepts/IMPLEMENTATION_SUMMARY.md`, `concepts/NEXTJS_PATTERNS.md`, `concepts/FRONTEND_PATTERNS.md`
+
+---
+
+### Neon DB Skill
+Located at `.claude/skills/neon-db/`
+
+**When to use**: Database setup and management with Neon PostgreSQL (serverless) for TypeScript or Python projects.
+
+**Key capabilities**:
+- **TypeScript (pg Pool)**: SSL required, configurable pool settings, error handling
+- **Python (psycopg2)**: Context managers, RealDictCursor, user isolation patterns
+- **Schema Design**: Tables, indexes, foreign keys, triggers
+- **Migrations**: Writing and running database migrations
+- **User Isolation**: Multi-tenant patterns with userId filtering
+
+**Connection requirements**:
+- **SSL Required**: Always use `sslmode=require` for Neon connections
+- **TypeScript SSL**: `ssl: { rejectUnauthorized: false }`
+- **Python SSL**: `sslmode='require'` in connection string
+
+**Schema conventions**:
+- **Columns**: camelCase with quotes (`"userId"`, `"createdAt"`)
+- **Tables**: snake_case or descriptive prefixes
+- **Timestamps**: `TIMESTAMP WITH TIME ZONE DEFAULT NOW()`
+- **JSONB**: For flexible metadata storage
+
+**Common mistakes to avoid**:
+- Missing SSL configuration (Neon requires SSL)
+- Not using connection pooling
+- Wrong column name casing (use quotes for camelCase)
+- Missing foreign key constraints
+
+**Required reading**: `concepts/TYPESCRIPT_PATTERNS.md`, `concepts/PYTHON_PATTERNS.md`, `concepts/SCHEMA_DESIGN.md`
+
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 004-frontend-auth: Added TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+
 - 002-cli-menu-ui: Added Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors)
 - 001-cli-todo: Added Python 3.13+, SQLModel, SQLite, Pydantic, pytest, ruff, mypy for CLI todo application
 
 ## Active Technologies
-- Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors) (002-cli-menu-ui)
-- SQLite (current), PostgreSQL-ready (future) (002-cli-menu-ui)
+- TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+ (004-frontend-auth)
+- Neon PostgreSQL (serverless) via Better Auth adapter (004-frontend-auth)

@@ -13,7 +13,7 @@ import { User } from "@/types/user";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { updateProfile } from "@/lib/api/tasks";
+import { authClient } from "@/lib/auth/auth-client";
 
 interface ProfileFormProps {
   user: User;
@@ -52,7 +52,11 @@ export function ProfileForm({ user, onProfileUpdate }: ProfileFormProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await updateProfile(user.id, { name: data.name });
+      const response = await authClient.updateUser({ name: data.name });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
 
       // Update local state
       onProfileUpdate({

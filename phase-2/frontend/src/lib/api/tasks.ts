@@ -147,6 +147,8 @@ export async function updateProfile(userId: string, data: { name: string }): Pro
 
 /**
  * Change user password
+ * Note: This function now uses Better Auth client directly for frontend operations
+ * For API-based password changes, a backend endpoint would be needed
  */
 export async function changePassword(userId: string, data: {
   current_password: string;
@@ -158,7 +160,19 @@ export async function changePassword(userId: string, data: {
     return demoTasks.changePassword(userId, data);
   }
 
-  return apiClient.put(`/api/${userId}/password`, data);
+  // For production, import and use authClient directly from auth-client.ts
+  // This maintains the API interface but suggests the Better Auth approach
+  const { authClient } = await import('@/lib/auth/auth-client');
+  const response = await authClient.changePassword({
+    currentPassword: data.current_password,
+    newPassword: data.new_password,
+  });
+
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+
+  return response.data;
 }
 
 /**

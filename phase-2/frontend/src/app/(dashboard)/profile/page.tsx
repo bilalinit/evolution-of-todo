@@ -2,6 +2,7 @@
  * Profile Page
  *
  * User profile management page.
+ * Uses session data directly from Better Auth instead of a separate API call.
  */
 
 "use client";
@@ -9,11 +10,9 @@
 import * as React from "react";
 import { useSession } from "@/lib/auth/hooks";
 import { redirect, useRouter } from "next/navigation";
-import { useProfile, useUpdateProfile, useChangePassword } from "@/hooks/useProfile";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { PasswordChangeForm } from "@/components/profile/PasswordChangeForm";
 import { AccountSettings } from "@/components/profile/AccountSettings";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function ProfilePage() {
@@ -27,18 +26,8 @@ export default function ProfilePage() {
     }
   }, [session, sessionLoading]);
 
-  // Get user ID from session
-  const userId = session?.user?.id || "";
-
-  // Fetch profile data
-  const {
-    data: profileData,
-    isLoading: profileLoading,
-    isError: profileError,
-  } = useProfile(userId);
-
   // Loading state
-  if (sessionLoading || profileLoading) {
+  if (sessionLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -61,12 +50,22 @@ export default function ProfilePage() {
     );
   }
 
-  if (!session || !profileData) {
+  if (!session) {
     return null;
   }
 
+  // Map session user to the format components expect
+  const user = {
+    id: session.user.id,
+    name: session.user.name || "",
+    email: session.user.email,
+    created_at: (session.user as any).createdAt?.toISOString?.()
+      || (session.user as any).created_at
+      || new Date().toISOString(),
+  };
+
   const handleProfileUpdate = (updatedUser: any) => {
-    // The hook handles cache updates, this is just for any additional logic
+    // Refresh the page to update session data
     router.refresh();
   };
 
@@ -89,17 +88,16 @@ export default function ProfilePage() {
         {/* Left Column: Forms */}
         <div className="space-y-6">
           <ProfileForm
-            user={profileData.user}
+            user={user}
             onProfileUpdate={handleProfileUpdate}
           />
-          <PasswordChangeForm userId={userId} />
+          <PasswordChangeForm userId={user.id} />
         </div>
 
-        {/* Right Column: Account Settings & Stats */}
+        {/* Right Column: Account Settings (stats will show when backend is ready) */}
         <div className="space-y-6">
           <AccountSettings
-            user={profileData.user}
-            stats={profileData.stats}
+            user={user}
           />
         </div>
       </div>

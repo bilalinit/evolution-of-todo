@@ -12,10 +12,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { changePassword } from "@/lib/api/tasks";
+import { authClient } from "@/lib/auth/auth-client";
 
 interface PasswordChangeFormProps {
-  userId: string;
+  userId: string; // Kept for compatibility but not used by Better Auth
 }
 
 interface PasswordChangeFormData {
@@ -65,11 +65,14 @@ export function PasswordChangeForm({ userId }: PasswordChangeFormProps) {
     setIsSubmitting(true);
 
     try {
-      await changePassword(userId, {
-        current_password: data.current_password,
-        new_password: data.new_password,
-        confirm_password: data.confirm_password,
+      const response = await authClient.changePassword({
+        currentPassword: data.current_password,
+        newPassword: data.new_password,
       });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
 
       toast.success("Password updated successfully", {
         description: "Your password has been changed.",
@@ -79,8 +82,9 @@ export function PasswordChangeForm({ userId }: PasswordChangeFormProps) {
       reset();
     } catch (error) {
       console.error("Password change error:", error);
+      const message = error instanceof Error ? error.message : "Failed to change password";
       toast.error("Failed to change password", {
-        description: "Please check your current password and try again.",
+        description: message,
       });
     } finally {
       setIsSubmitting(false);

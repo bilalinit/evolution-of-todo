@@ -3,15 +3,48 @@
  *
  * Handles authentication operations including sign-in, sign-up, and session management.
  * Uses Better Auth library for JWT token management and secure authentication.
+ * Includes JWT plugin for FastAPI backend integration.
  */
 
 import { createAuthClient } from "better-auth/client";
+import { jwtClient } from "better-auth/client/plugins";
 import { toast } from "sonner";
 
 // Create Better Auth client
+// Use absolute URL for SSR compatibility - relative URLs fail during server-side rendering
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    // Client-side: use relative URL (browser knows origin)
+    return "";
+  }
+  // Server-side: use absolute URL for SSR
+  return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+};
+
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  baseURL: getBaseURL(),
+  plugins: [
+    jwtClient()
+  ]
 });
+
+/**
+ * Get JWT token for API requests to FastAPI backend
+ * This token should be sent in the Authorization: Bearer <token> header
+ */
+export async function getJwtToken(): Promise<string | null> {
+  try {
+    const response = await authClient.token();
+    if (response.error) {
+      console.error("Failed to get JWT token:", response.error);
+      return null;
+    }
+    return response.data?.token || null;
+  } catch (error) {
+    console.error("Error getting JWT token:", error);
+    return null;
+  }
+}
 
 /**
  * JWT Token Management
