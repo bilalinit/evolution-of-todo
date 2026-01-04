@@ -170,8 +170,15 @@ export async function signUp(name: string, email: string, password: string) {
 export async function signOut() {
   try {
     await authClient.signOut();
+    // Explicitly delete the Better Auth session cookie
+    document.cookie = "better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Clear localStorage tokens
+    removeToken();
     toast.success("Signed out successfully");
   } catch (error) {
+    // Still clear cookies and localStorage even if signOut fails
+    document.cookie = "better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    removeToken();
     const message = error instanceof Error ? error.message : "Sign out failed";
     toast.error(message);
     throw error;
