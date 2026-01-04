@@ -1,0 +1,220 @@
+# GraphQL Schema for Todo Web Application
+# Alternative to REST API - provides flexible querying capabilities
+
+scalar DateTime
+scalar UUID
+scalar Date
+
+# Authentication Types
+type AuthPayload {
+  user: User!
+  token: String!
+  expiresAt: DateTime!
+}
+
+input SignupInput {
+  name: String!
+  email: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+# Core Entity Types
+type User {
+  id: UUID!
+  email: String!
+  name: String
+  image: String
+  createdAt: DateTime!
+
+  # Relationships
+  tasks(status: TaskStatus): [Task!]!
+  stats: UserStats!
+}
+
+type UserStats {
+  totalTasks: Int!
+  completedTasks: Int!
+  pendingTasks: Int!
+}
+
+type Task {
+  id: UUID!
+  title: String!
+  description: String
+  completed: Boolean!
+  priority: PriorityLevel!
+  category: Category!
+  dueDate: Date
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  # Relationships
+  owner: User!
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Category {
+  WORK
+  PERSONAL
+  SHOPPING
+  HEALTH
+  OTHER
+}
+
+enum TaskStatus {
+  ALL
+  PENDING
+  COMPLETED
+}
+
+enum SortField {
+  CREATED_AT
+  DUE_DATE
+  PRIORITY
+  TITLE
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+# Input Types for Mutations
+input CreateTaskInput {
+  title: String!
+  description: String
+  priority: PriorityLevel = MEDIUM
+  category: Category = OTHER
+  dueDate: Date
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  priority: PriorityLevel
+  category: Category
+  dueDate: Date
+  completed: Boolean
+}
+
+input UpdateProfileInput {
+  name: String!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+  confirmPassword: String!
+}
+
+input TaskFilters {
+  status: TaskStatus = ALL
+  priority: PriorityLevel
+  category: Category
+  searchQuery: String
+}
+
+input TaskSort {
+  field: SortField = CREATED_AT
+  order: SortOrder = DESC
+}
+
+# Query Responses
+type TaskConnection {
+  edges: [TaskEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  completedCount: Int!
+  pendingCount: Int!
+}
+
+type TaskEdge {
+  node: Task!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+# Error Types
+type FieldError {
+  field: String!
+  message: String!
+}
+
+type MutationResponse {
+  success: Boolean!
+  message: String
+  errors: [FieldError!]
+}
+
+# Root Query Type
+type Query {
+  # User Queries
+  me: User
+  user(id: UUID!): User
+
+  # Task Queries
+  task(id: UUID!): Task
+  tasks(
+    filters: TaskFilters
+    sort: TaskSort
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TaskConnection!
+
+  # Stats
+  globalStats: UserStats!
+}
+
+# Root Mutation Type
+type Mutation {
+  # Authentication
+  signup(input: SignupInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  logout: MutationResponse!
+
+  # Task Mutations
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(id: UUID!, input: UpdateTaskInput!): Task!
+  deleteTask(id: UUID!): MutationResponse!
+  toggleTaskCompletion(id: UUID!): Task!
+
+  # User Mutations
+  updateProfile(input: UpdateProfileInput!): User!
+  changePassword(input: ChangePasswordInput!): MutationResponse!
+}
+
+# Subscription Type (for real-time updates)
+type Subscription {
+  taskUpdated(userId: UUID!): Task!
+  taskCreated(userId: UUID!): Task!
+  taskDeleted(userId: UUID!): UUID!
+}
+
+# Directives
+directive @auth on FIELD_DEFINITION
+directive @deprecated(reason: String) on FIELD_DEFINITION | ENUM_VALUE
+
+# Schema Metadata
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}

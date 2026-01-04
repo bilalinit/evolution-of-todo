@@ -1,0 +1,608 @@
+openapi: 3.0.3
+info:
+  title: FastAPI Todo Backend API
+  description: Backend API for Todo application with Better Auth JWT authentication
+  version: 1.0.0
+  contact:
+    name: Todo App Team
+    email: team@example.com
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.todoapp.com
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - priority
+        - category
+        - user_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Complete project documentation"
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          example: "Write comprehensive docs for the FastAPI backend"
+        completed:
+          type: boolean
+          default: false
+          example: false
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          example: "high"
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+          default: other
+          example: "work"
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-01-15"
+        user_id:
+          type: string
+          example: "user-uuid-from-better-auth"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-31T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-12-31T10:30:00Z"
+
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+          default: other
+        due_date:
+          type: string
+          format: date
+          nullable: true
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        completed:
+          type: boolean
+        priority:
+          type: string
+          enum: [low, medium, high]
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+
+    TaskListResponse:
+      type: object
+      required:
+        - tasks
+        - total
+        - completed_count
+        - pending_count
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        total:
+          type: integer
+          minimum: 0
+          example: 10
+        completed_count:
+          type: integer
+          minimum: 0
+          example: 3
+        pending_count:
+          type: integer
+          minimum: 0
+          example: 7
+
+    TaskDetailResponse:
+      type: object
+      required:
+        - task
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    UserProfileResponse:
+      type: object
+      required:
+        - user
+        - stats
+      properties:
+        user:
+          type: object
+          required:
+            - id
+            - email
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+              format: email
+            name:
+              type: string
+              nullable: true
+            image:
+              type: string
+              nullable: true
+        stats:
+          type: object
+          required:
+            - total_tasks
+            - completed_tasks
+            - pending_tasks
+          properties:
+            total_tasks:
+              type: integer
+              minimum: 0
+            completed_tasks:
+              type: integer
+              minimum: 0
+            pending_tasks:
+              type: integer
+              minimum: 0
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Title is required"
+            details:
+              type: object
+              nullable: true
+              additionalProperties: true
+              example:
+                field: "title"
+                issue: "required"
+
+  parameters:
+    UserIdPath:
+      in: path
+      name: user_id
+      required: true
+      schema:
+        type: string
+      description: "Authenticated user ID (must match JWT token)"
+
+    TaskIdPath:
+      in: path
+      name: task_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: "Task unique identifier"
+
+    StatusFilter:
+      in: query
+      name: status
+      schema:
+        type: string
+        enum: [pending, completed, all]
+        default: all
+      description: "Filter by task completion status"
+
+    PriorityFilter:
+      in: query
+      name: priority
+      schema:
+        type: string
+        enum: [low, medium, high, all]
+        default: all
+      description: "Filter by task priority"
+
+    CategoryFilter:
+      in: query
+      name: category
+      schema:
+        type: string
+        enum: [work, personal, shopping, health, other, all]
+        default: all
+      description: "Filter by task category"
+
+    SearchQuery:
+      in: query
+      name: search
+      schema:
+        type: string
+      description: "Full-text search in title and description"
+
+    SortBy:
+      in: query
+      name: sort_by
+      schema:
+        type: string
+        enum: [created_at, due_date, priority, title]
+        default: created_at
+      description: "Sort field"
+
+    SortOrder:
+      in: query
+      name: order
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: "Sort order"
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/{user_id}/tasks:
+    get:
+      summary: List user's tasks
+      description: Get all tasks for the authenticated user with optional filtering, search, and sorting
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/StatusFilter"
+        - $ref: "#/components/parameters/PriorityFilter"
+        - $ref: "#/components/parameters/CategoryFilter"
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/SortBy"
+        - $ref: "#/components/parameters/SortOrder"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListResponse"
+        "401":
+          description: Unauthorized - Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden - User ID doesn't match JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      summary: Create new task
+      description: Create a new task for the authenticated user
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailResponse"
+        "400":
+          description: Bad request - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/{user_id}/tasks/{task_id}:
+    get:
+      summary: Get single task
+      description: Get a specific task by ID
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/TaskIdPath"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden - Task doesn't belong to user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Update task
+      description: Update an existing task
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/TaskIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailResponse"
+        "400":
+          description: Bad request - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Delete task
+      description: Delete an existing task
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/TaskIdPath"
+      responses:
+        "204":
+          description: Task deleted successfully (no content)
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/{user_id}/tasks/{task_id}/complete:
+    patch:
+      summary: Toggle task completion
+      description: Toggle the completed status of a task
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/TaskIdPath"
+      responses:
+        "200":
+          description: Task completion status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/{user_id}/profile:
+    get:
+      summary: Get user profile and statistics
+      description: Get user information and task statistics
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health:
+    get:
+      summary: Health check
+      description: Simple health check endpoint (no authentication required)
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+        "503":
+          description: Service unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  error:
+                    type: string

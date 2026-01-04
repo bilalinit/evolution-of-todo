@@ -1,0 +1,42 @@
+# Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+coverage/
+*.log
+.env*.local
+.vercel/
+.sentryclirc
+next-env.d.ts
+.contentlayer/
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+
+# Sentry
+.sentryclirc
+
+# Contentlayer
+.contentlayer/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local

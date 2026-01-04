@@ -228,13 +228,140 @@ Located at `.claude/skills/backend/`
 
 **Prohibited**: Never use `pip install`, `python -m venv`, or `poetry` - always use `uv`.
 
+---
+
+### Next.js Skill
+Located at `.claude/skills/nextjs/`
+
+**When to use**: Modern web application development with Next.js App Router, Server Components, and TypeScript.
+
+**Key capabilities**:
+- **Architecture**: App Router (`app/` directory), file conventions (`page.tsx`, `layout.tsx`, `loading.tsx`)
+- **Rendering**: Server Components (RSC) vs Client Components
+- **Data Fetching**: Async Server Components and Server Actions
+- **Styling**: Tailwind CSS integration and CSS Modules
+- **Optimization**: Image, Font, and Script optimization
+
+**Usage patterns**:
+- New project: Use strict flags (`src/` dir, no alias, etc.)
+- Default to Server Components unless interactivity is needed
+- Use Server Actions for form submissions and mutations
+
+**Required reading**: `CLAUDE.md`, `concepts/COMMANDS.md`, `concepts/STRUCTURE.md`
+
+---
+
+### UI Design Skill (Modern Technical Editorial)
+Located at `.claude/skills/ui-design/`
+
+**When to use**: Creating visually appealing UI designs with a Modern Technical Editorial aesthetic.
+
+**Key capabilities**:
+- **Color Tokens**: Cream Background (`#F9F7F2`) + Orange Accents (`#FF6B4A`)
+- **Typography Triad**: Serif Headings + Sans Body + Mono Labels
+- **Layout Patterns**: Wireframe Heroes, Technical Navs, Massive Footers
+- **Component Patterns**: Technical Buttons, Connection Lines
+
+**Core rules**:
+- Background: Always `#F9F7F2` (Cream), never pure white
+- Typography: Serif (`Playfair`, `Young Serif`), Sans (`DM Sans`), Mono (`JetBrains Mono`)
+- Technical Lines: Subtle 1px borders (`#2A1B12/10`)
+
+**Required reading**: `CLAUDE.md`, `TOKENS.md`, `LAYOUT_PATTERNS.md`, `COMPONENT_PATTERNS.md`
+
+---
+
+### UI Animation Skill
+Located at `.claude/skills/ui-animation/`
+
+**When to use**: Adding clean, minimalistic motion interactions using Framer Motion.
+
+**Key capabilities**:
+- **Motion Tokens**: Physics constants (Spring 400/10), Easing curves
+- **Animation Patterns**: FadeUp, LineDraw, Stagger effects
+- **Framer Motion**: `motion.div`, `motion.button`, custom variants
+
+**Core principles**:
+- **No Abrupt Appearances**: Use `FadeInUp` for content, `LineDraw` for dividers
+- **Physics Over Duration**: Use smooth eased transitions or tight springs
+- **Subtlety Over Action**: Hover scales rarely exceed `1.02`
+- **Stagger Everything**: Lists/grids must cascade
+
+**Usage patterns**:
+- Install: `npm install framer-motion`
+- For Next.js `<Link>` or library components, use `motion()` wrapper
+- Copy variants from `ANIMATION_PATTERNS.md`
+
+**Required reading**: `MOTION_TOKENS.md`, `ANIMATION_PATTERNS.md`
+
+---
+
+### Better Auth Skill
+Located at `.claude/skills/better-auth/`
+
+**When to use**: Authentication implementation with Better Auth across various frameworks (Next.js, Express, React, Vue).
+
+**Key capabilities**:
+- **Server Instance**: `betterAuth({ ... })` - Core server-side configuration
+- **Client Instance**: `createAuthClient({ ... })` - Client-side interaction (Next.js only)
+- **Direct Fetch**: For separate frontends, use direct fetch with `credentials: 'include'`
+- **Secret Management**: `BETTER_AUTH_SECRET` and provider secrets
+- **Database**: Supports pg.Pool, SQLite, Prisma, and URL-based connections
+
+**Framework patterns**:
+- **Next.js**: Use `auth.handler` for API routes, `auth.middleware` for middleware
+- **Express/Node.js**: Use `toNodeHandler(auth)` for mounting, `fromNodeHeaders()` for session verification
+- **Separate Frontend**: Use direct fetch with `credentials: 'include'`
+
+**Common mistakes to avoid**:
+- Missing `credentials: 'include'` in frontend fetch calls
+- Wrong middleware order in Express (CORS → auth → body parsers)
+- Using `account.additionalFields` instead of `user.additionalFields`
+- Forgetting to run migrations (`npx @better-auth/cli migrate`)
+
+**Required reading**: `concepts/IMPLEMENTATION_SUMMARY.md`, `concepts/NEXTJS_PATTERNS.md`, `concepts/FRONTEND_PATTERNS.md`
+
+---
+
+### Neon DB Skill
+Located at `.claude/skills/neon-db/`
+
+**When to use**: Database setup and management with Neon PostgreSQL (serverless) for TypeScript or Python projects.
+
+**Key capabilities**:
+- **TypeScript (pg Pool)**: SSL required, configurable pool settings, error handling
+- **Python (psycopg2)**: Context managers, RealDictCursor, user isolation patterns
+- **Schema Design**: Tables, indexes, foreign keys, triggers
+- **Migrations**: Writing and running database migrations
+- **User Isolation**: Multi-tenant patterns with userId filtering
+
+**Connection requirements**:
+- **SSL Required**: Always use `sslmode=require` for Neon connections
+- **TypeScript SSL**: `ssl: { rejectUnauthorized: false }`
+- **Python SSL**: `sslmode='require'` in connection string
+
+**Schema conventions**:
+- **Columns**: camelCase with quotes (`"userId"`, `"createdAt"`)
+- **Tables**: snake_case or descriptive prefixes
+- **Timestamps**: `TIMESTAMP WITH TIME ZONE DEFAULT NOW()`
+- **JSONB**: For flexible metadata storage
+
+**Common mistakes to avoid**:
+- Missing SSL configuration (Neon requires SSL)
+- Not using connection pooling
+- Wrong column name casing (use quotes for camelCase)
+- Missing foreign key constraints
+
+**Required reading**: `concepts/TYPESCRIPT_PATTERNS.md`, `concepts/PYTHON_PATTERNS.md`, `concepts/SCHEMA_DESIGN.md`
+
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 005-fastapi-backend: Added Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic
+- 004-frontend-auth: Added TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+
 - 002-cli-menu-ui: Added Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors)
-- 001-cli-todo: Added Python 3.13+, SQLModel, SQLite, Pydantic, pytest, ruff, mypy for CLI todo application
 
 ## Active Technologies
-- Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors) (002-cli-menu-ui)
-- SQLite (current), PostgreSQL-ready (future) (002-cli-menu-ui)
+- Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic (005-fastapi-backend)
+- PostgreSQL (Neon - existing database with Better Auth tables) (005-fastapi-backend)
