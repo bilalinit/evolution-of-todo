@@ -62,12 +62,19 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
   const onSubmit = async (data: CreateTaskFormData) => {
     try {
+      // Convert empty strings to undefined for optional fields
+      const cleanedData = {
+        ...data,
+        due_date: data.due_date || undefined,
+        description: data.description || undefined,
+      };
+
       if (mode === 'create') {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync(cleanedData);
       } else if (task) {
         await updateMutation.mutateAsync({
           taskId: task.id,
-          data: data as UpdateTaskRequest
+          data: cleanedData as UpdateTaskRequest
         });
       }
       onClose();
@@ -91,6 +98,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     { value: 'other', label: 'Other' },
   ];
 
+  const formId = `task-form-${mode}`;
+
   const formActions = (
     <DialogActions>
       <Button
@@ -103,6 +112,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       </Button>
       <Button
         type="submit"
+        form={formId}
         variant="primary"
         loading={createMutation.isPending || updateMutation.isPending}
       >
@@ -118,7 +128,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       title={mode === 'create' ? 'Create New Task' : 'Edit Task'}
       actions={formActions}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Title */}
         <Controller
           name="title"

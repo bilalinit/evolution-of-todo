@@ -9,6 +9,8 @@
 
 import { useForm } from "react-hook-form";
 import { useSignIn } from "@/lib/auth/hooks";
+import { getJwtToken } from "@/lib/auth/auth-client";
+import { setApiToken } from "@/lib/api/tasks";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -40,6 +42,12 @@ export function LoginForm() {
         email: data.email,
         password: data.password,
       });
+
+      // Set JWT token for API calls to FastAPI backend
+      const token = await getJwtToken();
+      if (token) {
+        setApiToken(token);
+      }
     } catch (error) {
       // Error is handled by the hook, but we can set a general error for UI
       setGeneralError("Invalid email or password. Please try again.");

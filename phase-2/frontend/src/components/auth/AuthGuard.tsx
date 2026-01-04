@@ -11,6 +11,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/hooks";
+import { getJwtToken } from "@/lib/auth/auth-client";
+import { setApiToken } from "@/lib/api/tasks";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface AuthGuardProps {
@@ -29,8 +31,22 @@ export function AuthGuard({ children }: AuthGuardProps) {
         // Redirect to login if not authenticated
         router.replace("/login");
       } else {
-        // User is authenticated, allow access
-        setIsChecking(false);
+        // User is authenticated, set JWT token for API calls
+        // IMPORTANT: Wait for token to be set before rendering children
+        console.log("[AuthGuard] User authenticated, getting JWT token...");
+        getJwtToken().then((token) => {
+          console.log("[AuthGuard] JWT token result:", token ? `Token received (${token.substring(0, 20)}...)` : "No token");
+          if (token) {
+            setApiToken(token);
+            console.log("[AuthGuard] Token set on API client");
+          }
+          // Only allow children to render AFTER token is set
+          setIsChecking(false);
+        }).catch((error) => {
+          console.error("[AuthGuard] Failed to get JWT token:", error);
+          // Still allow access even if token fetch fails
+          setIsChecking(false);
+        });
       }
     }
   }, [isLoading, isAuthenticated, router]);

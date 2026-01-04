@@ -57,7 +57,15 @@ export function formatDateTime(date: Date | string | number): string {
  * Get relative time string (e.g., "2 hours ago", "yesterday", "3 days ago")
  */
 export function formatRelativeTime(date: Date | string | number): string {
-  const d = new Date(date);
+  // Backend sends UTC timestamps without 'Z' suffix, so we need to handle this
+  let dateStr = typeof date === 'string' ? date : String(date);
+
+  // If it's a string without timezone info (no Z or +/-), treat as UTC
+  if (typeof date === 'string' && !date.endsWith('Z') && !date.match(/[+-]\d{2}:\d{2}$/)) {
+    dateStr = date + 'Z';
+  }
+
+  const d = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

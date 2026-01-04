@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { useSession } from "@/lib/auth/hooks";
+import { useTaskStats } from "@/hooks/useTasks";
 import { redirect, useRouter } from "next/navigation";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { PasswordChangeForm } from "@/components/profile/PasswordChangeForm";
@@ -18,6 +19,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function ProfilePage() {
   const router = useRouter();
   const { session, isLoading: sessionLoading } = useSession();
+
+  // Get user ID for stats query
+  const userId = session?.user?.id || '';
+  const { data: taskStats } = useTaskStats(userId);
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -94,10 +99,15 @@ export default function ProfilePage() {
           <PasswordChangeForm userId={user.id} />
         </div>
 
-        {/* Right Column: Account Settings (stats will show when backend is ready) */}
+        {/* Right Column: Account Settings with Task Stats */}
         <div className="space-y-6">
           <AccountSettings
             user={user}
+            stats={taskStats ? {
+              total_tasks: taskStats.total,
+              completed_tasks: taskStats.completed,
+              pending_tasks: taskStats.pending,
+            } : undefined}
           />
         </div>
       </div>

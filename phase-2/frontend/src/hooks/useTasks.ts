@@ -37,8 +37,9 @@ export function useCreateTask(userId: string) {
   return useMutation({
     mutationFn: (data: CreateTaskRequest) => createTask(userId, data),
     onSuccess: (response) => {
-      // Invalidate and refetch tasks
+      // Invalidate and refetch tasks and stats
       queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+      queryClient.invalidateQueries({ queryKey: ['task-stats', userId] });
 
       // Show success toast
       toast.success('Task created successfully', {
@@ -84,25 +85,16 @@ export function useDeleteTask(userId: string) {
 
   return useMutation({
     mutationFn: (taskId: string) => deleteTask(userId, taskId),
-    onSuccess: (_, taskId) => {
-      // Optimistically remove from cache
-      queryClient.setQueryData(['tasks', userId], (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          tasks: oldData.tasks.filter((task: any) => task.id !== taskId),
-          total: oldData.total - 1,
-        };
-      });
-
+    onSuccess: () => {
+      // Invalidate all task queries for this user (matches any filter combination)
+      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+      queryClient.invalidateQueries({ queryKey: ['task-stats', userId] });
       toast.success('Task deleted successfully');
     },
     onError: (error: any) => {
       toast.error('Failed to delete task', {
         description: error.message || 'Please try again.'
       });
-      // Invalidate to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
     },
   });
 }
@@ -149,6 +141,7 @@ export function useToggleTask(userId: string) {
     onSettled: () => {
       // Always refetch after error or success to ensure we're in sync
       queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+      queryClient.invalidateQueries({ queryKey: ['task-stats', userId] });
     },
   });
 }

@@ -61,14 +61,7 @@ export default function TasksPage() {
     data: tasksData,
     isLoading: tasksLoading,
     isFetching: tasksFetching,
-  } = useTasks(userId || '', {
-    search: debouncedSearch,
-    status: filters.status,
-    priority: filters.priority,
-    category: filters.category,
-    sort_by: sortConfig.field,
-    order: sortConfig.order,
-  });
+  } = useTasks(userId || '');
 
   // Mutations
   const toggleMutation = useToggleTask(userId || '');
@@ -110,7 +103,62 @@ export default function TasksPage() {
   };
 
   // Get tasks from data
-  const tasks = tasksData?.tasks || [];
+  const rawTasks = tasksData?.tasks || [];
+
+  // Client-side filtering and sorting
+  const tasks = React.useMemo(() => {
+    if (!rawTasks.length) return [];
+
+    let filtered = [...rawTasks];
+
+    // Apply filters
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(task =>
+        filters.status === 'completed' ? task.completed : !task.completed
+      );
+    }
+
+    if (filters.priority !== 'all') {
+      filtered = filtered.filter(task => task.priority === filters.priority);
+    }
+
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(task => task.category === filters.category);
+    }
+
+    // Apply search
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(task =>
+        task.title.toLowerCase().includes(query) ||
+        task.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      const { field, order } = sortConfig;
+      const multiplier = order === 'asc' ? 1 : -1;
+
+      switch (field) {
+        case 'title':
+          return multiplier * a.title.localeCompare(b.title);
+        case 'priority': {
+          const priorityWeight = { high: 3, medium: 2, low: 1 };
+          return multiplier * (priorityWeight[a.priority] - priorityWeight[b.priority]);
+        }
+        case 'due_date': {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1; // No due date at end
+          if (!b.due_date) return -1;
+          return multiplier * (new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        }
+        case 'created_at':
+        default:
+          return multiplier * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      }
+    });
+  }, [rawTasks, sortConfig, filters, debouncedSearch]);
   const stats = tasksData ? {
     total: tasksData.total,
     completed: tasksData.completed_count,
