@@ -170,14 +170,17 @@ export async function signUp(name: string, email: string, password: string) {
 export async function signOut() {
   try {
     await authClient.signOut();
-    // Explicitly delete the Better Auth session cookie
-    document.cookie = "better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    // Clear localStorage tokens
+    // Delete cookie with multiple domain attempts for localhost and production
+    ["", window.location.hostname, `.${window.location.hostname}`].forEach(domain => {
+      document.cookie = `better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;${domain ? ` domain=${domain};` : ""}`;
+    });
     removeToken();
     toast.success("Signed out successfully");
   } catch (error) {
-    // Still clear cookies and localStorage even if signOut fails
-    document.cookie = "better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Still clear on error
+    ["", window.location.hostname, `.${window.location.hostname}`].forEach(domain => {
+      document.cookie = `better-auth.session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;${domain ? ` domain=${domain};` : ""}`;
+    });
     removeToken();
     const message = error instanceof Error ? error.message : "Sign out failed";
     toast.error(message);
