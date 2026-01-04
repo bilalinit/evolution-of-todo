@@ -33,12 +33,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       } else {
         // User is authenticated, set JWT token for API calls
         // IMPORTANT: Wait for token to be set before rendering children
-        console.log("[AuthGuard] User authenticated, getting JWT token...");
         getJwtToken().then((token) => {
-          console.log("[AuthGuard] JWT token result:", token ? `Token received (${token.substring(0, 20)}...)` : "No token");
           if (token) {
             setApiToken(token);
-            console.log("[AuthGuard] Token set on API client");
           }
           // Only allow children to render AFTER token is set
           setIsChecking(false);
