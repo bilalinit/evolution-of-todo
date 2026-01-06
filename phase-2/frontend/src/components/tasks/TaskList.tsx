@@ -19,6 +19,7 @@ interface TaskListProps {
   onDelete: (taskId: string) => void;
   emptyStateType?: 'no-tasks' | 'no-results';
   searchQuery?: string;
+  onCreateTask?: () => void;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -29,7 +30,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   onEdit,
   onDelete,
   emptyStateType = 'no-tasks',
-  searchQuery
+  searchQuery,
+  onCreateTask
 }) => {
   // Show loading skeleton
   if (isLoading) {
@@ -46,6 +48,7 @@ export const TaskList: React.FC<TaskListProps> = ({
       <EmptyState
         type={emptyStateType}
         searchQuery={searchQuery}
+        onCreateTask={onCreateTask}
       />
     );
   }
