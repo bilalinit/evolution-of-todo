@@ -92,7 +92,7 @@ export function PasswordChangeForm({ userId }: PasswordChangeFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
       <CardHeader>
         <CardTitle className="text-lg">Change Password</CardTitle>
         <CardDescription>Update your account password</CardDescription>

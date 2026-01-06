@@ -68,12 +68,12 @@ export interface UpdateTaskFormData extends CreateTaskFormData {
 }
 
 // UI State Types
-export interface LoadingState {
+export interface TaskLoadingState {
   isLoading: boolean;
   type: 'initial' | 'create' | 'update' | 'delete' | 'toggle' | 'auth';
 }
 
-export interface ErrorState {
+export interface TaskErrorState {
   hasError: boolean;
   message?: string;
   code?: string;

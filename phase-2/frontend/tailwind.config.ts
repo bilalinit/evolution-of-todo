@@ -24,6 +24,20 @@ const config: Config = {
         sans: ["DM Sans", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
+      animation: {
+        "fade-in-up": "fadeInUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "line-draw": "lineDraw 1.2s cubic-bezier(0.22, 1, 0.36, 1) both",
+      },
+      keyframes: {
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(30px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        lineDraw: {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+      },
     },
   },
   plugins: [],

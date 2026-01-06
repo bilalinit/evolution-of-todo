@@ -10,8 +10,8 @@ import { Header } from "@/components/layout/Header";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard - Todo App",
-  description: "Manage your tasks in the Todo App dashboard",
+  title: "Dashboard - PlanStack",
+  description: "Manage your tasks in the PlanStack dashboard",
 };
 
 export default function DashboardLayout({

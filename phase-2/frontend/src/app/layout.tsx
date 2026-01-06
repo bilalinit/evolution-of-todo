@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "Todo App",
-  description: "Modern Todo Application with Authentication",
+  title: "PlanStack - Focus On What Matters",
+  description: "A modern task management platform designed for clarity and productivity. Focus on what matters, sync instantly across devices, and stay secure by default.",
 };
 
 export default function RootLayout({
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          <AuthProvider>{children}</AuthProvider>
+        </Providers>
       </body>
     </html>
   );
