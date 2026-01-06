@@ -274,6 +274,7 @@ export default function TasksPage() {
             onDelete={handleDeleteTask}
             emptyStateType={hasActiveFilters ? 'no-results' : 'no-tasks'}
             searchQuery={searchQuery}
+            onCreateTask={handleCreateTask}
           />
         </CardContent>
       </Card>

@@ -10,19 +10,29 @@ import { Plus, Search, ClipboardList } from 'lucide-react';
 interface EmptyStateProps {
   type?: 'no-tasks' | 'no-results';
   searchQuery?: string;
+  onCreateTask?: () => void;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
   type = 'no-tasks',
-  searchQuery
+  searchQuery,
+  onCreateTask
 }) => {
-  const config = {
+  const config: Record<string, {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    action: string;
+    showAction: boolean;
+    onClick?: () => void;
+  }> = {
     'no-tasks': {
       icon: <ClipboardList className="w-12 h-12 text-[#2A1B12]/30" strokeWidth={1.5} />,
       title: "No Tasks Yet",
       description: "Start by creating your first task. Stay organized and productive!",
       action: "Create Task",
       showAction: true,
+      onClick: onCreateTask,
     },
     'no-results': {
       icon: <Search className="w-12 h-12 text-[#2A1B12]/30" strokeWidth={1.5} />,
@@ -32,6 +42,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         : "No tasks match your current filters.",
       action: "Clear Filters",
       showAction: true,
+      // We might want a clear filters handler later, but for now focusing on create task
     },
   };
 
@@ -58,7 +69,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         {/* Action */}
         {currentConfig.showAction && (
           <div className="pt-2">
-            <button className="
+            <button
+              onClick={currentConfig.onClick}
+              className="
               inline-flex items-center gap-2
               px-6 py-3
               border border-[#2A1B12]
