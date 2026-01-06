@@ -60,7 +60,7 @@ export function AccountSettings({ user, stats }: AccountSettingsProps) {
   return (
     <div className="space-y-6">
       {/* Account Info Card */}
-      <Card>
+      <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
         <CardHeader>
           <CardTitle className="text-lg">Account Information</CardTitle>
           <CardDescription>Your account details and membership</CardDescription>
@@ -106,7 +106,7 @@ export function AccountSettings({ user, stats }: AccountSettingsProps) {
 
       {/* Task Statistics Card */}
       {stats && (
-        <Card>
+        <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
           <CardHeader>
             <CardTitle className="text-lg">Task Statistics</CardTitle>
             <CardDescription>Your productivity overview</CardDescription>
@@ -143,7 +143,7 @@ export function AccountSettings({ user, stats }: AccountSettingsProps) {
       )}
 
       {/* Danger Zone Card */}
-      <Card>
+      <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
         <CardHeader>
           <CardTitle className="text-lg">Danger Zone</CardTitle>
           <CardDescription>Log out of your account</CardDescription>

@@ -30,7 +30,7 @@ export function Header() {
           href="/tasks"
           className="text-xl font-serif font-bold text-foreground hover:text-accent transition-colors"
         >
-          Todo App
+          PlanStack
         </Link>
 
         {/* Navigation and User Menu */}

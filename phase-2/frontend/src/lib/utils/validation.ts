@@ -5,7 +5,7 @@
  */
 
 import { CreateTaskFormData, UpdateTaskFormData } from '@/types/task';
-import { LoginFormData, SignupFormData, PasswordChangeFormData, ProfileUpdateFormData } from '@/types/user';
+import { LoginFormData, SignupFormData, UserPasswordChangeFormData, UserProfileUpdateFormData } from '@/types/user';
 
 /**
  * Task validation schema
@@ -221,7 +221,7 @@ export function validateSignupForm(data: SignupFormData): {
 /**
  * Validate profile update form data
  */
-export function validateProfileForm(data: ProfileUpdateFormData): {
+export function validateProfileForm(data: UserProfileUpdateFormData): {
   isValid: boolean;
   errors: Partial<Record<keyof typeof userValidation, string>>;
 } {
@@ -252,7 +252,7 @@ export function validateProfileForm(data: ProfileUpdateFormData): {
 /**
  * Validate password change form data
  */
-export function validatePasswordChangeForm(data: PasswordChangeFormData): {
+export function validatePasswordChangeForm(data: UserPasswordChangeFormData): {
   isValid: boolean;
   errors: Partial<Record<'current_password' | 'new_password' | 'confirm_password', string>>;
 } {

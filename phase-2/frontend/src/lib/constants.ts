@@ -201,7 +201,7 @@ export const APP = {
   SESSION_KEY: "todo_app_session",
 
   // UI
-  PAGE_TITLE_SUFFIX: "• Todo App",
+  PAGE_TITLE_SUFFIX: "• PlanStack",
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
 
   // Validation
@@ -241,3 +241,127 @@ export type BreakpointKey = keyof typeof BREAKPOINTS;
 export type ZIndexKey = keyof typeof Z_INDEX;
 export type UIKey = keyof typeof UI;
 export type AppKey = keyof typeof APP;
+
+// ============================================================================
+// FEATURE DATA & CONTENT
+// ============================================================================
+
+// Hero Section Content
+export const HERO_CONTENT = {
+  headline: "FOCUS ON",
+  accentText: "WHAT MATTERS",
+  description: "A modern task management platform designed for clarity and productivity. Focus on what matters, sync instantly across devices, and stay secure by default.",
+  primaryCTA: "Get Started",
+  secondaryCTA: "Source Code",
+} as const;
+
+// Feature Cards Data
+export const FEATURE_DATA = [
+  {
+    id: "zero-distractions",
+    title: "Zero Distractions",
+    description: "Clean, focused interface designed to minimize cognitive load and maximize productivity.",
+    icon: "zap",
+    benefits: ["Minimalist design", "Smart Filtering", "Instant Search"],
+  },
+  {
+    id: "lightning-sync",
+    title: "Lightning Sync",
+    description: "Instant synchronization across all your devices with real-time updates.",
+    icon: "lightning",
+    benefits: ["Real-time updates", "Fast Performance", "Cross-platform"],
+  },
+  {
+    id: "secure-by-default",
+    title: "Secure by Default",
+    description: "Enterprise-grade security with industry-standard data protection and secure authentication.",
+    icon: "shield",
+    benefits: ["Trust & Transparency", "Secure Authentication", "Data Privacy"],
+  },
+] as const;
+
+// Tech Stack Data
+export const TECH_STACK_DATA = [
+  {
+    id: "nextjs",
+    name: "Next.js",
+    version: "16.1.1",
+    description: "React framework with App Router, Server Components, and optimal performance.",
+    icon: "code",
+    documentationUrl: "https://nextjs.org/docs",
+  },
+  {
+    id: "fastapi",
+    name: "FastAPI",
+    version: "0.110+",
+    description: "Modern Python backend framework with async support and automatic API documentation.",
+    icon: "server",
+    documentationUrl: "https://fastapi.tiangolo.com",
+  },
+  {
+    id: "neon",
+    name: "Neon PostgreSQL",
+    version: "Serverless",
+    description: "Serverless PostgreSQL with branching, autoscaling, and instant provisioning.",
+    icon: "database",
+    documentationUrl: "https://neon.tech/docs",
+  },
+  {
+    id: "better-auth",
+    name: "Better Auth",
+    version: "1.4.9",
+    description: "Authentication framework with JWT tokens, session management, and OAuth providers.",
+    icon: "lock",
+    documentationUrl: "https://better-auth.com",
+  },
+] as const;
+
+// Navigation Links
+export const NAVIGATION_LINKS = [
+  { label: "Features", href: "#features" },
+  { label: "Tech", href: "#tech" },
+  { label: "About", href: "https://github.com/bilalinit/evolution-of-todo/blob/main/README.md" },
+] as const;
+
+// Footer Data
+export const FOOTER_DATA = {
+  brandName: "PlanStack",
+  copyright: "© 2026 PlanStack. All rights reserved.",
+  linkGroups: [
+    {
+      title: "Product",
+      links: [
+        { label: "Features", href: "#features" },
+        { label: "Open Source", href: "https://github.com/bilalinit/evolution-of-todo.git" },
+      ],
+    },
+    {
+      title: "Company",
+      links: [
+        { label: "About", href: "https://github.com/bilalinit/evolution-of-todo/blob/main/README.md" },
+        { label: "linkedin", href: "https://www.linkedin.com/in/bilal-saeed-9aa904284/" },
+      ],
+    },
+    {
+      title: "Resources",
+      links: [
+        { label: "Documentation", href: "https://github.com/bilalinit/evolution-of-todo/blob/main/README.md" },
+        { label: "API", href: "https://github.com/bilalinit/evolution-of-todo/" },
+        { label: "Support", href: "https://www.linkedin.com/in/bilal-saeed-9aa904284/" },
+      ],
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Privacy", href: "#privacy" },
+        { label: "Terms", href: "#terms" },
+        { label: "Security", href: "https://www.better-auth.com/" },
+      ],
+    },
+  ],
+  socialLinks: [
+    { platform: "x", url: "https://twitter.com", label: "Twitter" },
+    { platform: "linkedin", url: "https://www.linkedin.com/in/bilal-saeed-9aa904284/", label: "LinkedIn" },
+    { platform: "github", url: "https://github.com/bilalinit/evolution-of-todo", label: "GitHub" },
+  ],
+} as const;

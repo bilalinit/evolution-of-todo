@@ -78,7 +78,7 @@ export function ProfileForm({ user, onProfileUpdate }: ProfileFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
       <CardHeader>
         <CardTitle className="text-lg">Profile Information</CardTitle>
         <CardDescription>Update your basic profile information</CardDescription>

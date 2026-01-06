@@ -13,7 +13,7 @@ let mockTasks: Task[] = [
   {
     id: "task-1",
     title: "Complete project documentation",
-    description: "Write comprehensive documentation for the todo app",
+    description: "Write comprehensive documentation for the PlanStack app",
     completed: false,
     priority: "high",
     category: "work",
@@ -250,7 +250,7 @@ export function resetMockTasks(): void {
     {
       id: "task-1",
       title: "Complete project documentation",
-      description: "Write comprehensive documentation for the todo app",
+      description: "Write comprehensive documentation for the PlanStack app",
       completed: false,
       priority: "high",
       category: "work",

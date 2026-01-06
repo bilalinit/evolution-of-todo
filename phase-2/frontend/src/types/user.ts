@@ -22,7 +22,7 @@ export interface Session {
 }
 
 // Auth Response Types
-export interface AuthResponse {
+export interface UserAuthResponse {
   user: User;
   token: string;
   expires_at: string;
@@ -41,19 +41,19 @@ export interface SignupFormData {
   confirm_password: string;
 }
 
-export interface ProfileUpdateFormData {
+export interface UserProfileUpdateFormData {
   name: string;
   email: string;  // May be read-only depending on backend
 }
 
-export interface PasswordChangeFormData {
+export interface UserPasswordChangeFormData {
   current_password: string;
   new_password: string;
   confirm_password: string;
 }
 
 // API Response Types
-export interface UserProfileResponse {
+export interface UserProfileResponseWrapper {
   user: User;
   stats?: {
     total_tasks: number;

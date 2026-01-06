@@ -1,7 +1,7 @@
 /**
  * Date Utility Functions
  *
- * Date formatting and manipulation utilities for the Todo application.
+ * Date formatting and manipulation utilities for the PlanStack application.
  */
 
 /**

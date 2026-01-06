@@ -185,7 +185,7 @@ export default function TasksPage() {
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
           <CardContent className="p-4">
             <p className="font-mono text-[10px] uppercase tracking-widest text-[#5C4D45]">
               Total Tasks
@@ -195,7 +195,7 @@ export default function TasksPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
           <CardContent className="p-4">
             <p className="font-mono text-[10px] uppercase tracking-widest text-[#5C4D45]">
               Pending
@@ -205,7 +205,7 @@ export default function TasksPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
           <CardContent className="p-4">
             <p className="font-mono text-[10px] uppercase tracking-widest text-[#5C4D45]">
               Completed
@@ -218,7 +218,7 @@ export default function TasksPage() {
       </div>
 
       {/* Filters and Search */}
-      <Card>
+      <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
         <CardHeader>
           <CardTitle className="text-lg">Search & Filter</CardTitle>
           <CardDescription>Find and organize your tasks</CardDescription>
@@ -251,7 +251,7 @@ export default function TasksPage() {
       </Card>
 
       {/* Tasks List */}
-      <Card>
+      <Card className="bg-surface hover:border-[#2A2A2A] transition-colors duration-200">
         <CardHeader>
           <CardTitle className="text-lg">Your Tasks</CardTitle>
           <CardDescription>

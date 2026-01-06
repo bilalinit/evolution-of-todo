@@ -1,0 +1,479 @@
+"""
+Frontend Design Implementation GraphQL Schema
+Feature: 006-frontend-design
+Date: 2026-01-05
+
+This schema defines the GraphQL types and queries for the frontend design components.
+Since this is primarily a frontend feature, it focuses on authentication and user data.
+"""
+
+# ============================================================================
+# AUTHENTICATION TYPES
+# ============================================================================
+
+type User {
+  "Unique user identifier"
+  id: ID!
+
+  "User email address"
+  email: String!
+
+  "User display name (optional)"
+  name: String
+
+  "User profile image URL (optional)"
+  image: String
+
+  "Account creation timestamp"
+  createdAt: String!
+
+  "Last update timestamp"
+  updatedAt: String!
+}
+
+type Session {
+  "JWT authentication token"
+  token: String!
+
+  "Session expiration timestamp"
+  expiresAt: String!
+
+  "Session creation timestamp"
+  createdAt: String!
+}
+
+type AuthPayload {
+  "Authentication status"
+  status: AuthStatus!
+
+  "Current user (if authenticated)"
+  user: User
+
+  "Current session (if authenticated)"
+  session: Session
+
+  "Error message (if authentication failed)"
+  error: String
+}
+
+enum AuthStatus {
+  LOADING
+  AUTHENTICATED
+  UNAUTHENTICATED
+  ERROR
+}
+
+# ============================================================================
+# NAVIGATION TYPES
+# ============================================================================
+
+type NavigationLink {
+  "Display label for the link"
+  label: String!
+
+  "URL path for navigation"
+  href: String!
+
+  "Whether authentication is required"
+  requiresAuth: Boolean!
+
+  "Optional icon identifier"
+  icon: String
+}
+
+type NavigationData {
+  "Current navigation path"
+  currentPath: String!
+
+  "Available navigation links"
+  links: [NavigationLink!]!
+
+  "Mobile menu state"
+  isMobileMenuOpen: Boolean!
+}
+
+# ============================================================================
+# FEATURE SECTION TYPES
+# ============================================================================
+
+type Feature {
+  "Unique feature identifier"
+  id: ID!
+
+  "Feature title"
+  title: String!
+
+  "Feature description"
+  description: String!
+
+  "List of benefits"
+  benefits: [String!]!
+
+  "Icon identifier"
+  icon: String!
+
+  "Priority level (P1, P2, P3)"
+  priority: String!
+}
+
+type FeatureSection {
+  "Section title"
+  title: String!
+
+  "Section subtitle"
+  subtitle: String!
+
+  "List of features"
+  features: [Feature!]!
+}
+
+# ============================================================================
+# TECH STACK TYPES
+# ============================================================================
+
+type Technology {
+  "Technology identifier"
+  id: ID!
+
+  "Technology name"
+  name: String!
+
+  "Version string (optional)"
+  version: String
+
+  "Technology description"
+  description: String!
+
+  "Documentation URL (optional)"
+  documentationUrl: String
+
+  "Icon identifier"
+  icon: String!
+}
+
+type TechStackSection {
+  "Section title"
+  title: String!
+
+  "List of technologies"
+  technologies: [Technology!]!
+}
+
+# ============================================================================
+# FOOTER TYPES
+# ============================================================================
+
+type FooterLink {
+  "Link display text"
+  label: String!
+
+  "Link URL"
+  href: String!
+
+  "Whether link opens in new tab"
+  isExternal: Boolean!
+}
+
+type FooterLinkGroup {
+  "Group title"
+  title: String!
+
+  "Links in this group"
+  links: [FooterLink!]!
+}
+
+type SocialMediaLink {
+  "Platform name"
+  platform: String!
+
+  "Profile URL"
+  url: String!
+
+  "Icon identifier"
+  icon: String!
+
+  "Display label"
+  label: String!
+}
+
+type FooterData {
+  "Brand name for footer"
+  brandName: String!
+
+  "Navigation link groups"
+  linkGroups: [FooterLinkGroup!]!
+
+  "Social media links"
+  socialLinks: [SocialMediaLink!]!
+
+  "Copyright text"
+  copyright: String!
+
+  "Legal links (optional)"
+  legalLinks: [FooterLink!]
+}
+
+# ============================================================================
+# PAGE CONTENT TYPES
+# ============================================================================
+
+type HeroContent {
+  "Main headline"
+  headline: String!
+
+  "Supporting subheadline"
+  subheadline: String!
+
+  "Detailed description"
+  description: String!
+
+  "Primary CTA text"
+  primaryCta: String!
+
+  "Secondary CTA text"
+  secondaryCta: String!
+}
+
+type PageContent {
+  "Hero section content"
+  hero: HeroContent!
+
+  "Features section"
+  features: FeatureSection!
+
+  "Tech stack section"
+  techStack: TechStackSection!
+
+  "Footer data"
+  footer: FooterData!
+}
+
+# ============================================================================
+# QUERIES
+# ============================================================================
+
+type Query {
+  """
+  Get current authentication state
+  Returns: AuthPayload with user session data
+  """
+  authState: AuthPayload!
+
+  """
+  Get navigation data for current user state
+  Returns: NavigationData with links based on auth status
+  """
+  navigationData: NavigationData!
+
+  """
+  Get hero section content
+  Returns: HeroContent for landing page
+  """
+  heroContent: HeroContent!
+
+  """
+  Get features section data
+  Returns: FeatureSection with all features
+  """
+  featuresSection: FeatureSection!
+
+  """
+  Get technology stack data
+  Returns: TechStackSection with technologies
+  """
+  techStackSection: TechStackSection!
+
+  """
+  Get footer data
+  Returns: FooterData for page footer
+  """
+  footerData: FooterData!
+
+  """
+  Get complete page content
+  Returns: PageContent with all sections
+  """
+  pageContent: PageContent!
+}
+
+# ============================================================================
+# MUTATIONS
+# ============================================================================
+
+type Mutation {
+  """
+  Login with email and password
+  Returns: AuthPayload with session
+  """
+  login(email: String!, password: String!): AuthPayload!
+
+  """
+  Register new account
+  Returns: AuthPayload with new session
+  """
+  register(email: String!, password: String!, name: String): AuthPayload!
+
+  """
+  Logout current session
+  Returns: AuthPayload with unauthenticated status
+  """
+  logout: AuthPayload!
+
+  """
+  Update user profile
+  Returns: User with updated data
+  """
+  updateUser(name: String, image: String): User!
+
+  """
+  Toggle mobile menu state
+  Returns: NavigationData with updated state
+  """
+  toggleMobileMenu: NavigationData!
+}
+
+# ============================================================================
+# SUBSCRIPTIONS
+# ============================================================================
+
+type Subscription {
+  """
+  Subscribe to authentication state changes
+  Returns: AuthPayload on state change
+  """
+  authStateChanged: AuthPayload!
+
+  """
+  Subscribe to navigation state changes
+  Returns: NavigationData on navigation change
+  """
+  navigationStateChanged: NavigationData!
+}
+
+# ============================================================================
+# INPUT TYPES
+# ============================================================================
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String
+}
+
+input UpdateUserInput {
+  name: String
+  image: String
+}
+
+# ============================================================================
+# DIRECTIVES
+# ============================================================================
+
+"""
+Directive to mark fields that require authentication
+"""
+directive @auth on FIELD_DEFINITION
+
+"""
+Directive to mark fields that should be cached
+"""
+directive @cache(ttl: Int) on FIELD_DEFINITION
+
+"""
+Directive to mark fields that require specific permissions
+"""
+directive @requires(permissions: [String!]!) on FIELD_DEFINITION
+
+# ============================================================================
+# SCALARS
+# ============================================================================
+
+scalar DateTime
+scalar JSON
+scalar URL
+
+# ============================================================================
+# EXAMPLE QUERIES
+# ============================================================================
+
+"""
+Example: Get all data needed for landing page
+query GetLandingPage {
+  heroContent {
+    headline
+    subheadline
+    description
+    primaryCta
+    secondaryCta
+  }
+  featuresSection {
+    title
+    subtitle
+    features {
+      id
+      title
+      description
+      benefits
+      icon
+    }
+  }
+  techStackSection {
+    title
+    technologies {
+      id
+      name
+      version
+      description
+      icon
+    }
+  }
+  footerData {
+    brandName
+    linkGroups {
+      title
+      links {
+        label
+        href
+      }
+    }
+    socialLinks {
+      platform
+      url
+      label
+    }
+    copyright
+  }
+}
+
+Example: Authentication flow
+mutation LoginUser {
+  login(email: "user@example.com", password: "password") {
+    status
+    user {
+      id
+      email
+      name
+    }
+    session {
+      token
+      expiresAt
+    }
+  }
+}
+
+Example: Real-time auth updates
+subscription OnAuthChange {
+  authStateChanged {
+    status
+    user {
+      id
+      name
+    }
+  }
+}
+"""

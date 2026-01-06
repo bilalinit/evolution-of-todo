@@ -358,10 +358,8 @@ Located at `.claude/skills/neon-db/`
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 006-frontend-design: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 - 005-fastapi-backend: Added Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic
 - 004-frontend-auth: Added TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+
-- 002-cli-menu-ui: Added Python 3.13+ (per constitution) + SQLModel, Pydantic (existing), Colorama (for ANSI colors)
 
 ## Active Technologies
-- Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic (005-fastapi-backend)
-- PostgreSQL (Neon - existing database with Better Auth tables) (005-fastapi-backend)
