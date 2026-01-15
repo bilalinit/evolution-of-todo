@@ -354,12 +354,130 @@ Located at `.claude/skills/neon-db/`
 
 **Required reading**: `concepts/TYPESCRIPT_PATTERNS.md`, `concepts/PYTHON_PATTERNS.md`, `concepts/SCHEMA_DESIGN.md`
 
+---
+
+### OpenAI Agents SDK Skill
+Located at `.claude/skills/openai-agents-sdk/`
+
+**When to use**: Implementing AI agents and workflows using the OpenAI Agents SDK with Xiaomi "mimo-v2-flash" model integration.
+
+**Key capabilities**:
+- **Core Basics**: Agent creation, tool definitions, function calling
+- **Advanced Workflows**: Handoffs between agents, guardrails, structured outputs
+- **Realtime & Voice**: Voice agents and realtime interactions
+- **Integration & Deployment**: FastAPI integration, error handling, production deployment
+
+**Usage patterns**:
+- **Agent Creation**: Define agents with specific instructions and tools
+- **Tool Integration**: Create custom functions that agents can call
+- **Workflow Orchestration**: Chain multiple agents with handoffs and routing
+- **Structured Outputs**: Define schemas for consistent agent responses
+- **Error Handling**: Implement guardrails and validation for agent behavior
+
+**Framework integration**:
+- **FastAPI**: Mount agent handlers as API endpoints
+- **Xiaomi Model**: Use "mimo-v2-flash" for cost-effective agent operations
+- **Production**: Handle async operations, rate limiting, and monitoring
+
+**Common patterns**:
+- **Multi-agent Systems**: Specialized agents for different tasks
+- **Tool Augmentation**: Give agents access to external APIs and databases
+- **Guardrails**: Input/output validation and safety checks
+- **State Management**: Maintain conversation context across agent interactions
+
+**Required reading**: `concepts/AGENT_PATTERNS.md`, `concepts/INTEGRATION_SUMMARY.md`, `concepts/DEPLOYMENT_GUIDE.md`
+
+---
+
+### MCP Integration Skill
+Located at `.claude/skills/mcp-integration/`
+
+**When to use**: Integrating Model Context Protocol (MCP) servers and clients for enhanced AI capabilities and tool access.
+
+**Key capabilities**:
+- **MCP Server Setup**: Creating and configuring MCP servers for custom tools
+- **Client Integration**: Connecting AI assistants to MCP servers
+- **Tool Discovery**: Automatic discovery and registration of available tools
+- **Protocol Management**: Handling MCP protocol versions and compatibility
+
+**Usage patterns**:
+- **Server Creation**: Define tools, resources, and prompts for MCP servers
+- **Client Configuration**: Connect clients to MCP servers with proper authentication
+- **Tool Execution**: Execute tools through MCP protocol with proper error handling
+- **Resource Management**: Handle resources, prompts, and tool lifecycle
+
+**Integration patterns**:
+- **Local Development**: Running MCP servers locally for testing
+- **Production Deployment**: Secure deployment of MCP servers
+- **Multi-server Setup**: Managing multiple MCP servers and tool routing
+- **Authentication**: Handling API keys, tokens, and access control
+
+**Common use cases**:
+- **Custom Tools**: Expose proprietary functions as MCP tools
+- **Database Access**: Provide safe database query tools via MCP
+- **API Integration**: Bridge external APIs to AI assistants
+- **Workflow Automation**: Create automated workflows using MCP tools
+
+**Required reading**: `concepts/MCP_PROTOCOL.md`, `concepts/SERVER_IMPLEMENTATION.md`, `concepts/CLIENT_INTEGRATION.md`
+
+---
+
+### ChatKit Skill
+Located at `.claude/skills/chatkit/`
+
+**When to use**: Building real-time chat interfaces and messaging features with modern chat UI components and protocols.
+
+**Key capabilities**:
+- **Real-time Messaging**: WebSocket integration for live chat updates
+- **Chat UI Components**: Pre-built message bubbles, input areas, user lists
+- **Message State Management**: Handling message delivery, read receipts, typing indicators
+- **User Presence**: Online/offline status, typing indicators, user avatars
+- **Media Handling**: Image/file sharing in chat conversations
+
+**Usage patterns**:
+- **Direct Chat**: One-to-one messaging interfaces
+- **Group Chat**: Multi-user conversations with participant management
+- **Channel-based**: Topic-based chat rooms and channels
+- **Threaded Replies**: Nested conversation threads
+- **Message History**: Loading previous messages with infinite scroll
+
+**UI Components**:
+- **Message Bubbles**: Sent/received message styling with timestamps
+- **Input Areas**: Rich text input with attachment support
+- **User Lists**: Online/offline user presence indicators
+- **Chat Headers**: Conversation info and participant management
+- **Empty States**: Welcome screens and no-messages states
+
+**Integration patterns**:
+- **WebSocket Providers**: Socket.io, Pusher, or custom WebSocket implementations
+- **State Management**: Zustand, Redux, or React Context for chat state
+- **Real-time Updates**: Optimistic UI updates and conflict resolution
+- **Offline Support**: Message queuing and sync when reconnected
+
+**Common patterns**:
+- **Typing Indicators**: Show when users are typing with debouncing
+- **Read Receipts**: Visual indicators for message delivery and read status
+- **Message Status**: Sending, delivered, read, failed states
+- **User Mentions**: @username highlighting and notifications
+- **Emoji Reactions**: Quick reactions to messages
+
+**Required reading**: `concepts/CHAT_PATTERNS.md`, `concepts/REALTIME_SYNC.md`, `concepts/MESSAGE_STATES.md`
+
+---
+
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
-- 006-frontend-design: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-- 005-fastapi-backend: Added Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic
-- 004-frontend-auth: Added TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+
+- 007-agents-mcp: Added OpenAI Agents SDK, MCP integration, dual-agent system, chatbot UI
+- 006-frontend-design: Added Modern Technical Editorial UI design system
+- 005-fastapi-backend: Added Python 3.11+ + FastAPI, uvicorn, SQLModel, asyncpg, python-jose, pydantic
 
 ## Active Technologies
+- Python 3.12+ (backend), TypeScript 5.x (frontend) (007-agents-mcp)
+- Neon Serverless PostgreSQL with SQLModel ORM (007-agents-mcp)
+- OpenAI Agents SDK 0.6.5+ (007-agents-mcp)
+- MCP SDK 0.6.5+ (007-agents-mcp)
+- Xiaomi mimo-v2-flash model (007-agents-mcp)
+- Better Auth 1.4.9 (007-agents-mcp)
+- Next.js 16.1.1 (007-agents-mcp)

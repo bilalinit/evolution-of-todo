@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "./globals.css";
+import { Providers } from "./providers";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+
+export const metadata: Metadata = {
+  title: "PlanStack - Focus On What Matters",
+  description: "A modern task management platform designed for clarity and productivity. Focus on what matters, sync instantly across devices, and stay secure by default.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className="antialiased">
+        <Providers>
+          <AuthProvider>{children}</AuthProvider>
+        </Providers>
+      </body>
+    </html>
+  );
+}

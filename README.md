@@ -30,13 +30,19 @@ This project follows a **feature-driven development approach** with sequential b
    - **Branch 004**: Better Auth integration with profile features ✅
    - **Status**: Authentication system fully implemented and tested
 
+3. **Phase 3** (`phase-3/`): MCP Agent Integration (In Progress)
+   - **Branch 007**: Dual-agent AI system with MCP tools ✅
+   - **Status**: Backend complete, frontend chatbot implemented, ChatKit pending
+
 ## 🚀 Current Status
 
-- **Current Branch**: `005-fastapi-backend` ✅ Complete
-- **Current Location**: `phase-2/backend/` (FastAPI backend) + `phase-2/frontend/` (Next.js 16+ application)
-- **Previous Work**: `phase-1/backend/` (CLI implementations)
+- **Current Branch**: `007-agents-mcp` 🚧 In Progress
+- **Current Location**: `phase-3/backend/` (MCP Agent Backend) + `phase-3/frontend/` (Chatbot UI)
+- **Previous Work**:
+  - `phase-1/backend/` (CLI implementations) ✅ Complete
+  - `phase-2/backend/` + `phase-2/frontend/` (Full-stack app) ✅ Complete
 - **Base Branch**: `main` (stable)
-- **Status**: ✅ **Full-stack application complete - FastAPI backend + Next.js frontend with authentication**
+- **Status**: 🚧 **Phase 3 Backend Complete, Awaiting Checkpoint 2 Approval**
 
 ## 📋 Project Structure
 
@@ -73,12 +79,27 @@ This project follows a **feature-driven development approach** with sequential b
 │   │   ├── package.json          # Node.js dependencies
 │   │   └── README.md             # Frontend documentation
 │   └── README.md                 # Phase 2 overview
+├── phase-3/                      # MCP Agent Integration (In Progress 🚧)
+│   ├── backend/                  # MCP Agent Backend
+│   │   ├── src/backend/          # Python source code
+│   │   │   ├── agents.py         # Dual-agent system (Orchestrator + UrduSpecialist)
+│   │   │   ├── main.py           # FastAPI with MCP integration
+│   │   │   ├── services/         # TaskService with user isolation
+│   │   │   └── models/           # Data models
+│   │   ├── task_serves_mcp_tools.py  # MCP server with 5 CRUD tools
+│   │   ├── scripts/              # Integration tests
+│   │   └── pyproject.toml        # UV dependencies
+│   └── frontend/                 # Chatbot UI
+│       ├── src/app/chatbot/      # Chatbot page
+│       ├── src/components/chat/  # Chat components
+│       └── src/app/api/chat/     # API proxy route
 ├── specs/                        # Feature specifications
 │   ├── 001-cli-todo/             # Command-based CLI spec
 │   ├── 002-cli-menu-ui/          # Menu-driven CLI spec (70/70 tasks)
 │   ├── 003-nextjs-frontend/      # Next.js web app spec (191 tasks)
 │   ├── 004-frontend-auth/        # Authentication spec (complete)
-│   └── 005-fastapi-backend/      # FastAPI backend spec (24 tasks)
+│   ├── 005-fastapi-backend/      # FastAPI backend spec (24 tasks)
+│   └── 007-agents-mcp/           # MCP Agent Integration spec (98 tasks, in progress)
 ├── history/                      # Development history
 │   ├── prompts/                  # Prompt History Records (PHRs)
 │   └── adr/                      # Architecture Decision Records
@@ -217,6 +238,30 @@ This project follows a **feature-driven development approach** with sequential b
   - **001-cli-todo**: Command-based interface
   - **002-cli-menu-ui**: Menu-driven interface
   - **Quality**: 147 tests, 85%+ coverage, mypy/ruff compliance
+
+### Phase 3: MCP Agent Integration (In Progress 🚧)
+- **[specs/007-agents-mcp/](specs/007-agents-mcp/)** - Complete specification
+  - **Spec**: **[spec.md](specs/007-agents-mcp/spec.md)** (3 user stories, 98 tasks)
+  - **Plan**: **[plan.md](specs/007-agents-mcp/plan.md)** - Dual-agent architecture
+  - **Implementation**: **[tasks.md](specs/007-agents-mcp/tasks.md)** - Checkpoint-driven tasks
+  - **Status**: Backend complete, awaiting Checkpoint 2 approval
+
+- **[phase-3/backend/](phase-3/backend/)** - MCP Agent Backend:
+  - **Branch**: `007-agents-mcp` 🚧 In Progress
+  - **Framework**: OpenAI Agents SDK + FastAPI + MCP Protocol
+  - **Agents**: Dual-agent system (Orchestrator + UrduSpecialist)
+  - **MCP Tools**: 5 CRUD operations with user isolation
+  - **Database**: Neon PostgreSQL with TaskService layer
+  - **Security**: Multi-layer JWT validation and user isolation
+  - **Testing**: Comprehensive integration tests (7 test cases)
+
+- **[phase-3/frontend/](phase-3/frontend/)** - Chatbot UI:
+  - **Branch**: `007-agents-mcp` 🚧 In Progress
+  - **Page**: `/chatbot` with modern chat interface
+  - **Components**: Message bubbles, input, chat header, quick actions
+  - **Integration**: API proxy route with JWT authentication
+  - **Design**: Modern Technical Editorial with animations
+  - **Status**: Complete frontend implementation, ChatKit pending
 
 ## 🏗️ Architecture
 
@@ -372,8 +417,53 @@ uv run backend
 - **Database**: Neon PostgreSQL with proper schema and indexes
 - **Documentation**: Complete PHRs for all implementation stages
 
-### Future Roadmap (After Phase 2)
-- **Phase 3**: MCP protocol integration for AI agents
+### 🚧 Current Development: Phase 3 - MCP Agent Integration (In Progress)
+
+**Branch**: `007-agents-mcp` | **Status**: Backend Complete, Awaiting Checkpoint 2 Approval
+
+Phase 3 is currently in progress with dual-agent AI system implementation. The backend is complete and ready for review, but **ChatKit integration remains for a future branch**.
+
+#### Phase 3 Progress Summary
+- ✅ **Phase 3.1**: Agent Foundation - COMPLETE (Checkpoint 1)
+- ✅ **Phase 3.2**: MCP Integration - COMPLETE (Checkpoint 2 Ready)
+- 🟡 **Phase 3.3**: Frontend Chatbot UI - COMPLETE (Enhanced)
+- ⏳ **Phase 3.4**: ChatKit Integration - PENDING (Future Branch)
+
+#### Current Status: Checkpoint 2 Review Required
+**Backend implementation is complete and ready for user review before proceeding:**
+
+**✅ Completed Components:**
+- **Dual-Agent System**: Orchestrator + UrduSpecialist with handoffs
+- **MCP Tools**: 5 CRUD operations (create, list, update, delete, toggle)
+- **Frontend Chatbot**: Modern UI with animations and responsive design
+- **Integration**: Complete end-to-end flow from frontend → agents → MCP → database
+
+**⏳ Pending Components:**
+- **ChatKit Integration**: Real-time chat UI components (scheduled for future branch)
+- **Checkpoint 2 Approval**: User validation required before any further work
+
+**Test Commands for Review:**
+```bash
+# Test backend integration
+cd phase-3/backend
+uv run python scripts/test_mcp_integration.py
+
+# Start backend server
+uv run uvicorn backend.main:app --reload
+
+# Test frontend (in separate terminal)
+cd phase-3/frontend
+npm run dev
+# Navigate to http://localhost:3000/chatbot
+```
+
+**Next Steps:**
+1. **User Review**: Evaluate backend functionality at Checkpoint 2
+2. **Approval Required**: Explicit approval needed before any additional work
+3. **Future Branch**: ChatKit integration planned for separate branch after Phase 3 completion
+
+### Future Roadmap (After Phase 3)
+- **Phase 3.4**: ChatKit integration for enhanced real-time chat features
 - **Phase 4**: Advanced multi-tenant authentication
 - **Phase 5**: React Native mobile application
 - **Phase 6**: Real-time features with WebSockets
@@ -390,10 +480,10 @@ uv run backend
 ## 📊 Project Metrics
 
 ### Overall Progress
-- **Phases Completed**: 2/2 (Phase 1 complete, Phase 2 complete)
-- **Total Feature Branches**: 5 (`001-`, `002-`, `003-`, `004-`, `005-`)
-- **Spec-Driven Features**: 5 complete specifications
-- **Total Tasks Completed**: 285/285 (100% overall)
+- **Phases Completed**: 2/3 (Phase 1 complete, Phase 2 complete, Phase 3 in progress)
+- **Total Feature Branches**: 6 (`001-`, `002-`, `003-`, `004-`, `005-`, `007-`)
+- **Spec-Driven Features**: 6 specifications (5 complete, 1 in progress)
+- **Total Tasks Completed**: 285/383 (74% overall - 98 Phase 3 tasks pending ChatKit)
 
 ### Phase 1: CLI Applications (Completed ✅)
 **Location**: `phase-1/backend/` | **Branches**: `001-cli-todo`, `002-cli-menu-ui`
@@ -425,7 +515,36 @@ uv run backend
 - **API**: Complete CRUD endpoints (8 endpoints) with security
 - **Verification**: TypeScript compilation, Python type safety, comprehensive testing
 
+### Phase 3: MCP Agent Integration (In Progress 🚧)
+**Location**: `phase-3/backend/` + `phase-3/frontend/` | **Branch**: `007-agents-mcp`
+
+#### Current Status
+- **Total Tasks**: 98/98 (100% backend complete, ChatKit pending)
+- **Phase 3.1**: Agent Foundation - COMPLETE (Checkpoint 1 ✅)
+- **Phase 3.2**: MCP Integration - COMPLETE (Checkpoint 2 Ready ✅)
+- **Phase 3.3**: Frontend Chatbot UI - COMPLETE (Enhanced ✅)
+- **Phase 3.4**: ChatKit Integration - PENDING (Future Branch ⏳)
+
+#### Completed Components
+- **Dual-Agent System**: Orchestrator + UrduSpecialist with handoffs
+- **MCP Tools**: 5 CRUD operations (create, list, update, delete, toggle)
+- **Frontend Chatbot**: Modern UI with animations and responsive design
+- **Integration**: Complete end-to-end flow from frontend → agents → MCP → database
+- **Testing**: Comprehensive integration tests with 7 test cases
+- **Security**: Multi-layer user isolation (JWT + query + service)
+
+#### Pending Components
+- **ChatKit Integration**: Real-time chat UI components (scheduled for future branch)
+- **Checkpoint 2 Approval**: User validation required before any additional work
+
 #### Technology Stack
+- **Framework**: OpenAI Agents SDK 0.6.5+ with Xiaomi mimo-v2-flash model
+- **MCP Protocol**: Model Context Protocol for tool integration
+- **Backend**: FastAPI with per-request MCP server lifecycle
+- **Frontend**: Next.js 16+ with modern chatbot UI
+- **Database**: Neon PostgreSQL with user isolation patterns
+
+#### Technology Stack (Phase 3)
 
 **Backend (FastAPI):**
 - **Framework**: FastAPI with async/await patterns
@@ -450,17 +569,17 @@ uv run backend
 ### Development Quality Metrics
 - **SDD Compliance**: 100% (Spec → Plan → Tasks → Implementation → Documentation)
 - **PHR Records**: Comprehensive development history for all phases
-- **Skills Integration**: 3 specialized skills (Next.js, UI Design, UI Animation)
+- **Skills Integration**: 9 specialized skills (Backend, Better Auth, ChatKit, MCP Integration, Neon DB, Next.js, OpenAI Agents SDK, UI Animation, UI Design)
 - **Type Safety**: 100% TypeScript strict mode (Phase 2 frontend), 100% Python type safety (Phase 2 backend), 100% mypy (Phase 1)
 - **Code Quality**: 100% ruff compliant (Phase 1), ESLint (Phase 2), Black formatting (Phase 2 backend)
 - **Build Verification**: All builds passing
 - **Test Coverage**: Comprehensive integration tests for backend
 
 ### Documentation & Specs
-- **Specifications**: 5 complete (001, 002, 003, 004, 005)
-- **Plans**: 5 architecture plans
-- **Tasks**: 285 total tasks (285 completed - 100%)
-- **PHRs**: Comprehensive development history (3 recent PHRs)
+- **Specifications**: 6 complete (001, 002, 003, 004, 005, 007)
+- **Plans**: 6 architecture plans
+- **Tasks**: 383 total tasks (285 completed, 98 Phase 3 tasks - 74% overall)
+- **PHRs**: Comprehensive development history (8 recent PHRs for Phase 3)
 - **ADRs**: Architectural decisions documented
 
 ## 🤝 Contributing
