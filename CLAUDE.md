@@ -354,12 +354,126 @@ Located at `.claude/skills/neon-db/`
 
 **Required reading**: `concepts/TYPESCRIPT_PATTERNS.md`, `concepts/PYTHON_PATTERNS.md`, `concepts/SCHEMA_DESIGN.md`
 
+---
+
+### OpenAI Agents SDK Skill
+Located at `.claude/skills/openai-agents-sdk/`
+
+**When to use**: Implementing AI agents and workflows using the OpenAI Agents SDK with Xiaomi "mimo-v2-flash" model integration.
+
+**Key capabilities**:
+- **Core Basics**: Agent creation, tool definitions, function calling
+- **Advanced Workflows**: Handoffs between agents, guardrails, structured outputs
+- **Realtime & Voice**: Voice agents and realtime interactions
+- **Integration & Deployment**: FastAPI integration, error handling, production deployment
+
+**Usage patterns**:
+- **Agent Creation**: Define agents with specific instructions and tools
+- **Tool Integration**: Create custom functions that agents can call
+- **Workflow Orchestration**: Chain multiple agents with handoffs and routing
+- **Structured Outputs**: Define schemas for consistent agent responses
+- **Error Handling**: Implement guardrails and validation for agent behavior
+
+**Framework integration**:
+- **FastAPI**: Mount agent handlers as API endpoints
+- **Xiaomi Model**: Use "mimo-v2-flash" for cost-effective agent operations
+- **Production**: Handle async operations, rate limiting, and monitoring
+
+**Common patterns**:
+- **Multi-agent Systems**: Specialized agents for different tasks
+- **Tool Augmentation**: Give agents access to external APIs and databases
+- **Guardrails**: Input/output validation and safety checks
+- **State Management**: Maintain conversation context across agent interactions
+
+**Required reading**: `concepts/AGENT_PATTERNS.md`, `concepts/INTEGRATION_SUMMARY.md`, `concepts/DEPLOYMENT_GUIDE.md`
+
+---
+
+### MCP Integration Skill
+Located at `.claude/skills/mcp-integration/`
+
+**When to use**: Integrating Model Context Protocol (MCP) servers and clients for enhanced AI capabilities and tool access.
+
+**Key capabilities**:
+- **MCP Server Setup**: Creating and configuring MCP servers for custom tools
+- **Client Integration**: Connecting AI assistants to MCP servers
+- **Tool Discovery**: Automatic discovery and registration of available tools
+- **Protocol Management**: Handling MCP protocol versions and compatibility
+
+**Usage patterns**:
+- **Server Creation**: Define tools, resources, and prompts for MCP servers
+- **Client Configuration**: Connect clients to MCP servers with proper authentication
+- **Tool Execution**: Execute tools through MCP protocol with proper error handling
+- **Resource Management**: Handle resources, prompts, and tool lifecycle
+
+**Integration patterns**:
+- **Local Development**: Running MCP servers locally for testing
+- **Production Deployment**: Secure deployment of MCP servers
+- **Multi-server Setup**: Managing multiple MCP servers and tool routing
+- **Authentication**: Handling API keys, tokens, and access control
+
+**Common use cases**:
+- **Custom Tools**: Expose proprietary functions as MCP tools
+- **Database Access**: Provide safe database query tools via MCP
+- **API Integration**: Bridge external APIs to AI assistants
+- **Workflow Automation**: Create automated workflows using MCP tools
+
+**Required reading**: `concepts/MCP_PROTOCOL.md`, `concepts/SERVER_IMPLEMENTATION.md`, `concepts/CLIENT_INTEGRATION.md`
+
+---
+
+### ChatKit Skill
+Located at `.claude/skills/chatkit/`
+
+**When to use**: Building ChatKit + OpenAI Agents SDK integrations with universal patterns for any framework and authentication system.
+
+**Key capabilities**:
+- **ChatKit Integration**: OpenAI ChatKit with OpenAI Agents SDK (any framework)
+- **Custom ChatKitServer**: Implementation patterns for FastAPI, Express, Django, etc.
+- **Frontend Integration**: React, Next.js, Vue, Svelte integration patterns
+- **User Context Injection**: Personalized AI responses with user data
+- **Tool Integration**: MCP tools and function calling in ChatKit conversations
+- **Data Persistence**: Chat threads and messages with any database
+- **Authentication Patterns**: JWT and session management for any auth provider
+
+**Usage patterns**:
+- **Framework-Agnostic Backend**: FastAPI, Express, Django, Flask patterns
+- **Frontend Integration**: Next.js 16+ App Router, React, Vue, Svelte
+- **User Isolation**: Multi-user systems with JWT-based filtering
+- **Streaming Responses**: Server-Sent Events (SSE) for real-time updates
+- **MCP Integration**: Dynamic MCP server creation per request
+
+**Architecture patterns**:
+- **System Flow**: Frontend → API Proxy → Backend → ChatKit → Agents SDK → Tools
+- **Single Endpoint**: One `/api/chatkit` route handles all operations
+- **PostgreSQL Store**: User-isolated database patterns with 14 required methods
+- **Xiaomi Model**: "mimo-v2-flash" integration via AsyncOpenAI client
+- **Error Handling**: Comprehensive patterns for common ChatKit errors
+
+**Integration patterns**:
+- **CDN Loading**: Script loading with `afterInteractive` strategy
+- **Web Components**: `customElements.whenDefined()` detection
+- **JWT Extraction**: Token validation and user context passing
+- **SSE Streaming**: Proper headers and format for ChatKit compatibility
+- **MCP Lifecycle**: Per-request server creation with cleanup
+
+**Common patterns**:
+- **User Isolation**: Filter all database queries by `user_id` from JWT
+- **Session Management**: ChatKit handles sessions internally (no separate endpoints)
+- **Conversation History**: Build context for agents from thread items
+- **Language Detection**: Urdu/English based on character detection
+- **Health Checks**: Backend and frontend health verification
+
+**Required reading**: `concepts/BACKEND_PATTERNS.md`, `concepts/FRONTEND_PATTERNS.md`, `concepts/STORE_PATTERNS.md`, `concepts/AGENTS_INTEGRATION.md`, `references/API_REFERENCE.md`
+
+---
+
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
-- 006-frontend-design: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-- 005-fastapi-backend: Added Python 3.11+ (per specification) + FastAPI, uvicorn, SQLModel (REQUIRED - ORM), asyncpg, python-jose (JWT), pydantic
-- 004-frontend-auth: Added TypeScript 5.x, Next.js 16.1.1 (App Router), Node.js 18+
+- 008-chatkit-integration: Added ChatKit + OpenAI Agents SDK integration with universal patterns for any framework
+- 007-agents-mcp: Added OpenAI Agents SDK, MCP integration, dual-agent system, chatbot UI
+- 006-frontend-design: Added Modern Technical Editorial UI design system
 
 ## Active Technologies

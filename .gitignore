@@ -159,3 +159,35 @@ phase-2/frontend/.contentlayer/
 # Contentlayer
 .contentlayer/
 
+# Phase 3 - ChatKit Integration (runtime files)
+phase-3/logs/
+phase-3/status.server.sh
+phase-3/stop.server.sh
+phase-3/script.md
+phase-3/start.server.sh
+
+# Phase 3 Backend (runtime and build files)
+phase-3/backend/.venv/
+phase-3/backend/uv.lock
+phase-3/backend/.pytest_cache/
+phase-3/backend/.ruff_cache/
+phase-3/backend/.mypy_cache/
+phase-3/backend/*.log
+phase-3/backend/logs/
+
+# Phase 3 Frontend (runtime and build files)
+phase-3/frontend/node_modules/
+phase-3/frontend/.next/
+phase-3/frontend/out/
+phase-3/frontend/build/
+phase-3/frontend/dist/
+phase-3/frontend/.turbo/
+phase-3/frontend/coverage/
+phase-3/frontend/*.log
+phase-3/frontend/.env*.local
+phase-3/frontend/.vercel/
+phase-3/frontend/.sentryclirc
+phase-3/frontend/next-env.d.ts
+phase-3/frontend/.contentlayer/
+phase-3/frontend/tsconfig.tsbuildinfo
+
