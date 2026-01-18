@@ -1,59 +1,87 @@
-# Phase 3 - Full-Stack Todo Application with AI Agent Integration
+# Phase 3 - ChatKit + Agents + MCP Integration
 
-A complete full-stack todo application built with a modern technology stack:
+Complete full-stack todo application with OpenAI ChatKit, OpenAI Agents SDK, and MCP Protocol integration. Features dual-agent AI system, natural language task management, and complete ChatKit UI.
 
 ## 🛠️ Technology Stack
 
 - **Next.js 16+** (App Router) - Modern React framework with server components
 - **Python FastAPI** - Async Python web framework for high-performance APIs
+- **OpenAI ChatKit** - Complete ChatKit UI integration via CDN
+- **OpenAI Agents SDK** - Dual-agent AI system (Orchestrator + UrduSpecialist)
+- **MCP Protocol** - Model Context Protocol for tool integration
 - **SQLModel** - Type-safe ORM for Python with async support
 - **Neon Serverless PostgreSQL** - Cloud-native PostgreSQL database
-- **Claude Code + Spec-Kit Plus** - Spec-driven development workflow
 - **Better Auth** - Complete authentication solution
+- **Claude Code + Spec-Kit Plus** - Spec-driven development workflow
 
 ## 🎯 Overview
 
-This phase contains a production-ready full-stack application:
+This phase contains a production-ready full-stack application with complete ChatKit integration:
 
-**Backend (FastAPI)**: Modern async Python API with JWT authentication
-**Frontend (Next.js)**: React-based web application with Better Auth integration
+**Backend (FastAPI)**: Modern async Python API with ChatKitServer, dual-agent system, and MCP tools
+**Frontend (Next.js)**: React-based web application with OpenAI ChatKit UI and dual-agent support
+**AI Integration**: OpenAI ChatKit + OpenAI Agents SDK + MCP Protocol for natural language task management
+
+### Key Features
+- ✅ **Complete ChatKit Integration**: Official OpenAI ChatKit UI via CDN
+- ✅ **Dual-Agent AI System**: Orchestrator + UrduSpecialist with intelligent handoffs
+- ✅ **MCP Tools**: 5 CRUD operations (create, list, update, delete, toggle) via natural language
+- ✅ **Thread Persistence**: Automatic conversation storage in PostgreSQL with user isolation
+- ✅ **Natural Language Tasks**: "Create a task for tomorrow", "Show my tasks", "میرے ٹاسک دکھاؤ"
+- ✅ **Modern UI**: Technical Editorial design with cream/orange palette
+- ✅ **Full CRUD**: Traditional task management + AI-powered chat interface
 
 ## 🏗️ Project Structure
 
 ```
 phase-3/
-├── backend/                      # FastAPI Python backend
+├── backend/                      # ChatKit + Agents + MCP Backend
 │   ├── src/backend/
-│   │   ├── main.py              # FastAPI app entry
+│   │   ├── main.py              # FastAPI app + ChatKit endpoints
+│   │   ├── chatkit_server.py    # ChatKitServer implementation
+│   │   ├── chatkit_store.py     # PostgreSQL store (14 methods)
+│   │   ├── agents.py            # Dual-agent system (Orchestrator + UrduSpecialist)
 │   │   ├── routes/              # API endpoints (tasks, profile)
-│   │   ├── models/              # SQLModel entities
+│   │   ├── models/              # SQLModel entities (including chatkit.py)
 │   │   ├── auth/                # JWT verification
 │   │   ├── middleware/          # Auth middleware
 │   │   ├── database.py          # PostgreSQL connection
 │   │   └── config.py            # Environment config
-│   ├── pyproject.toml           # UV dependencies
+│   ├── migrations/              # Database migrations
+│   │   └── 001_chatkit_tables.sql
+│   ├── task_serves_mcp_tools.py # MCP server with 5 CRUD tools
+│   ├── setup_chatkit.py         # Setup and validation script
+│   ├── test_chatkit.py          # ChatKit session tests
+│   ├── test_chatkit_session.py  # ChatKit session tests
+│   ├── pyproject.toml           # UV dependencies (openai packages)
 │   ├── uv.lock                  # Lock file
 │   ├── scripts/                 # Test & utility scripts
 │   └── README.md                # Backend documentation
 │
-├── frontend/                     # Next.js 16+ frontend
+├── frontend/                     # Next.js 16+ frontend with ChatKit
 │   ├── src/
 │   │   ├── app/                 # App Router routes
 │   │   │   ├── (auth)/          # Login/Signup pages
 │   │   │   ├── (dashboard)/     # Protected routes
-│   │   │   └── layout.tsx       # Root layout
+│   │   │   ├── chatkit/         # NEW: ChatKit Integration page
+│   │   │   └── layout.tsx       # Root layout (includes ChatKit CDN)
 │   │   ├── components/          # React components
 │   │   │   ├── auth/            # Auth components
 │   │   │   ├── tasks/           # Task components
+│   │   │   ├── chat/            # NEW: ChatKit components
+│   │   │   │   ├── ChatKitWidget.tsx
+│   │   │   │   └── EnhancedChatKitWidget.tsx
 │   │   │   ├── ui/              # UI primitives (20+)
 │   │   │   └── layout/          # Layout components
 │   │   ├── lib/                 # API client & utilities
+│   │   │   ├── chatkit/         # NEW: ChatKit utilities
+│   │   │   │   └── session.ts
 │   │   ├── hooks/               # Custom hooks
 │   │   ├── types/               # TypeScript definitions
 │   │   └── providers/           # React providers
 │   ├── public/                  # Static assets
 │   ├── tailwind.config.ts       # Design system
-│   ├── package.json             # Node dependencies
+│   ├── package.json             # Node dependencies (@openai/chatkit-react)
 │   └── README.md                # Frontend documentation
 │
 └── README.md                     # This file (full-stack overview)
@@ -85,9 +113,13 @@ cp .env.example .env
 # Edit .env with your values:
 # DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
 # BETTER_AUTH_SECRET=your-32-char-secret
-# PORT=8000
+# OPENAI_API_KEY=sk-...  # Required for ChatKit + Agents
 # XIAOMI_API_KEY=your_xiaomi_api_key_here
+# PORT=8000
 # MCP_SERVER_TIMEOUT=30
+
+# Setup ChatKit tables and validation
+python setup_chatkit.py
 ```
 
 ### Step 2: Setup Frontend
@@ -150,6 +182,15 @@ Both frontend and backend must use the same:
 ## 📡 API Integration
 
 ### Backend Endpoints
+
+**ChatKit Integration:**
+- `POST /api/chatkit` - Main ChatKit endpoint (handles all protocol operations)
+- `POST /api/chatkit/session` - Create OpenAI ChatKit session
+- `GET /api/chatkit/health` - ChatKit system health check
+
+**Agent Communication:**
+- `POST /api/chat` - Chat with dual-agent system (Orchestrator + UrduSpecialist)
+- `GET /api/chat/health` - Agent system health check
 
 **Task Management:**
 - `GET /api/{user_id}/tasks` - List with filters (status, priority, category, search)
@@ -244,6 +285,44 @@ export function useCreateTask(userId: string) {
 - Clean cards with minimal borders
 - Color-coded badges for priority/category
 
+## 🤖 ChatKit Integration
+
+### How ChatKit Works
+
+**Complete ChatKit Flow:**
+1. **User visits** `/chatkit` page in frontend
+2. **ChatKit loads** OpenAI ChatKit via CDN with enhanced detection
+3. **Session created** via `/api/chatkit/session` with JWT authentication
+4. **User sends message** like "Create a task for tomorrow"
+5. **ChatKit → Backend** → `/api/chatkit` endpoint processes request
+6. **Dual-Agent Routing** → Orchestrator routes to UrduSpecialist if needed
+7. **MCP Tool Execution** → Agent executes `create_task` tool with user isolation
+8. **Database Storage** → Task saved to PostgreSQL with user_id filter
+9. **Response Streamed** → Back to ChatKit UI in real-time
+10. **Thread Persisted** → Conversation saved automatically to PostgreSQL
+
+**Natural Language Examples:**
+- "Create a task for tomorrow with high priority"
+- "Show me all my pending tasks"
+- "میرے ٹاسک دکھاؤ" (Urdu: Show my tasks)
+- "Mark task as completed"
+- "Delete the meeting task"
+
+### ChatKit Components
+
+**Backend:**
+- `ChatKitServer` - Custom server extending OpenAI ChatKit with Agents SDK
+- `PostgresChatKitStore` - Complete PostgreSQL store with 14 methods
+- `setup_chatkit.py` - Automated setup and validation script
+- `001_chatkit_tables.sql` - Database migration for ChatKit tables
+
+**Frontend:**
+- `ChatKitWidget.tsx` - Complete ChatKit integration using `@openai/chatkit-react`
+- `EnhancedChatKitWidget.tsx` - Enhanced UI wrapper with feature highlights
+- `app/chatkit/page.tsx` - Dedicated ChatKit page
+- `lib/chatkit/session.ts` - Session management utilities
+- `app/api/chatkit/route.ts` - Secure proxy endpoint
+
 ## 🗄️ Database Schema
 
 ### Shared Database
@@ -265,9 +344,37 @@ CREATE TABLE IF NOT EXISTS task (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Indexes for performance
+-- ChatKit Threads table (created by backend)
+CREATE TABLE chatkit_thread (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    thread_metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT chatkit_thread_user_id_check CHECK (user_id ~ '^[a-zA-Z0-9_-]+$')
+);
+
+-- ChatKit Thread Items table (created by backend)
+CREATE TABLE chatkit_thread_item (
+    id VARCHAR(255) PRIMARY KEY,
+    thread_id VARCHAR(255) NOT NULL REFERENCES chatkit_thread(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN (
+        'user_message', 'assistant_message', 'tool_call',
+        'tool_result', 'system_message', 'error'
+    )),
+    content JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT chatkit_thread_item_type_check CHECK (type ~ '^[a-z_]+$')
+);
+
+-- Performance indexes
 CREATE INDEX idx_task_user_id ON task(user_id);
 CREATE INDEX idx_task_completed ON task(completed);
+CREATE INDEX idx_chatkit_thread_user ON chatkit_thread(user_id);
+CREATE INDEX idx_chatkit_thread_updated ON chatkit_thread(updated_at);
+CREATE INDEX idx_chatkit_item_thread ON chatkit_thread_item(thread_id);
+CREATE INDEX idx_chatkit_item_created ON chatkit_thread_item(created_at);
+CREATE INDEX idx_chatkit_item_type ON chatkit_thread_item(type);
 
 -- Better Auth tables (created by frontend)
 -- user, session, account, verification tables
@@ -444,100 +551,141 @@ uv run python -c "from backend.database import engine; print('DB OK')"
 
 ## 📚 Documentation
 
-### Phase 2 Documentation
+### Phase 3 Documentation
 
 **Specifications:**
-- **Backend**: `specs/005-fastapi-backend/spec.md` (5 user stories, 24 tasks)
-- **Frontend**: `specs/003-nextjs-frontend/spec.md` (4 user stories, 191 tasks)
+- **Agent Foundation**: `specs/007-agents-mcp/spec.md` (3 user stories, 98 tasks)
+- **ChatKit Integration**: `specs/008-chatkit-integration/spec.md` (4 user stories, 164 tasks)
 
 **Architecture:**
-- **Backend Plan**: `specs/005-fastapi-backend/plan.md`
-- **Frontend Plan**: `specs/003-nextjs-frontend/plan.md`
+- **Agent Plan**: `specs/007-agents-mcp/plan.md`
+- **ChatKit Plan**: `specs/008-chatkit-integration/plan.md`
 
 **Implementation:**
-- **Backend Tasks**: `specs/005-fastapi-backend/tasks.md` (24/24 ✅)
-- **Frontend Tasks**: `specs/003-nextjs-frontend/tasks.md` (191/191 ✅)
+- **Agent Tasks**: `specs/007-agents-mcp/tasks.md` (98/98 ✅)
+- **ChatKit Tasks**: `specs/008-chatkit-integration/tasks.md` (164/164 ✅)
 
 **Documentation:**
 - **PHRs**: `history/prompts/` (comprehensive development history)
-- **Backend README**: `phase-2/backend/README.md`
-- **Frontend README**: `phase-2/frontend/README.md`
+- **Backend README**: `phase-3/backend/README.md`
+- **Frontend README**: `phase-3/frontend/README.md`
+- **Main README**: `phase-3/README.md` (this file)
 
 ## 🎯 Current Status
 
-**Branch**: `005-fastapi-backend` ✅ Complete
-**Total Tasks**: 215/215 (100% complete)
-**Status**: ✅ **Production Ready**
+**Branch**: `008-chatkit-integration` ✅ Complete
+**Total Tasks**: 164/164 (100% complete)
+**Status**: ✅ **Phase 3 Complete - ChatKit + Agents + MCP Ready for Production**
 
-### Backend (24/24 tasks)
-- ✅ FastAPI application setup
-- ✅ UV package management
-- ✅ SQLModel ORM with Neon PostgreSQL
-- ✅ JWT authentication integration
-- ✅ Complete CRUD API (8 endpoints)
-- ✅ User ownership enforcement
-- ✅ Input validation and error handling
-- ✅ Comprehensive testing suite
-- ✅ Security features (CORS, auth, validation)
-- ✅ Database connection pooling
+### Backend (Complete)
+- ✅ **ChatKitServer**: Custom server extending OpenAI ChatKit with Agents SDK
+- ✅ **PostgresChatKitStore**: Complete PostgreSQL store with 14 methods
+- ✅ **Dual-Agent System**: Orchestrator + UrduSpecialist with intelligent handoffs
+- ✅ **MCP Tools**: 5 CRUD operations (create, list, update, delete, toggle)
+- ✅ **Session Management**: OpenAI ChatKit session creation and refresh
+- ✅ **Thread Persistence**: Complete chat history storage in PostgreSQL
+- ✅ **User Isolation**: Multi-layer security (JWT + RLS + query filtering)
+- ✅ **Setup Script**: Automated `setup_chatkit.py` for environment validation
+- ✅ **Testing**: Integration, security, and performance tests (164 tasks)
 
-### Frontend (191/191 tasks)
-- ✅ Next.js 16+ with App Router
-- ✅ Better Auth integration
-- ✅ Complete authentication flow
-- ✅ Profile management with password change
-- ✅ 20+ reusable UI components
-- ✅ Modern Technical Editorial design system
-- ✅ TypeScript strict mode compliance
-- ✅ React Query integration
-- ✅ API client with error handling
-- ✅ Protected routes with AuthGuard
+### Frontend (Complete)
+- ✅ **ChatKit Integration**: Complete OpenAI ChatKit UI via CDN
+- ✅ **ChatKitWidget.tsx**: React component using `@openai/chatkit-react`
+- ✅ **EnhancedChatKitWidget.tsx**: Enhanced UI wrapper with features
+- ✅ **ChatKit Page**: Dedicated `/chatkit` route with modern UI
+- ✅ **Session Utilities**: Client-side session management
+- ✅ **API Proxy**: Secure `/api/chatkit` proxy endpoint
+- ✅ **Enhanced Loading**: Multiple detection methods with fallbacks
+- ✅ **Error Handling**: Comprehensive error states and recovery
+- ✅ **Modern UI**: Technical Editorial design (cream #F9F7F2, orange #FF6B4A)
 
-### Integration
-- ✅ Shared database (Neon PostgreSQL)
-- ✅ JWT token compatibility
-- ✅ CORS configuration
-- ✅ API endpoint mapping
-- ✅ Environment variable alignment
+### Integration (Complete)
+- ✅ **ChatKit Flow**: Frontend → API Proxy → Backend → ChatKit → Agents → MCP → Database
+- ✅ **Thread Persistence**: Automatic conversation saving with user isolation
+- ✅ **Dual-Agent Routing**: Intelligent handoffs between Orchestrator and UrduSpecialist
+- ✅ **MCP Tool Integration**: 5 CRUD operations accessible via natural language
+- ✅ **JWT Authentication**: Secure session management with HTTP-only cookies
+- ✅ **Database Schema**: Complete ChatKit tables with performance indexes
+- ✅ **Environment Setup**: Automated setup script with validation
 
 ## 🚀 Ready for Production
 
 ### What's Included
 
 **Backend:**
-- 8 RESTful endpoints with full CRUD
-- JWT authentication with Better Auth compatibility
-- Async PostgreSQL operations with connection pooling
-- Input validation and comprehensive error handling
-- Automatic OpenAPI documentation
+- **ChatKit Integration**: Complete OpenAI ChatKit with custom server
+- **Dual-Agent System**: Orchestrator + UrduSpecialist with handoffs
+- **MCP Tools**: 5 CRUD operations via Model Context Protocol
+- **Thread Persistence**: PostgreSQL storage with user isolation
+- **Session Management**: JWT-based authentication with refresh
+- **RESTful API**: Complete CRUD endpoints for tasks and profile
+- **Security**: Multi-layer user isolation (JWT + RLS + query filtering)
+- **Setup Script**: Automated environment validation and migration
 
 **Frontend:**
-- Complete authentication system (signup, login, logout)
-- Task management with filtering and search
-- Profile page with statistics and password change
-- Modern design system with 20+ components
-- React Query for optimal performance
+- **ChatKit UI**: Complete OpenAI ChatKit integration via CDN
+- **Dual-Agent Support**: Visual distinction between agents
+- **Natural Language Tasks**: "Create a task", "Show my tasks", Urdu support
+- **Thread Persistence**: Automatic conversation saving
+- **Complete Auth**: Better Auth with JWT tokens
+- **Task Management**: Traditional CRUD + AI-powered chat
+- **Modern UI**: Technical Editorial design system
+- **20+ Components**: Reusable primitives with TypeScript
 
-**Security:**
-- JWT verification on every request
-- User ownership enforcement
-- Input validation (client + server)
-- HTTP-only cookie storage
-- CORS protection
+**Integration:**
+- **Complete Flow**: Frontend → ChatKit → Agents → MCP → Database
+- **User Isolation**: All operations scoped to authenticated user
+- **Thread Persistence**: Conversations saved automatically
+- **Error Handling**: Comprehensive error states and recovery
+- **Performance**: Optimized queries with proper indexes
 
-### Next Steps
+### Quick Start Commands
 
-1. **Integration Testing**: Test full user flow with real backend
-2. **Performance**: Monitor and optimize query performance
-3. **Monitoring**: Add error tracking and analytics
-4. **Deployment**: Deploy backend and frontend to production
-5. **Scaling**: Add rate limiting and caching as needed
+```bash
+# Backend setup and run
+cd phase-3/backend
+python setup_chatkit.py
+uv run uvicorn backend.main:app --reload
+
+# Frontend setup and run
+cd phase-3/frontend
+npm install
+npm run dev
+
+# Visit: http://localhost:3000/chatkit
+```
+
+### Available Features
+
+**ChatKit Interface:**
+- **Natural Language**: "Create a task for tomorrow", "Show my tasks", "میرے ٹاسک دکھاؤ"
+- **Thread Persistence**: All conversations saved to PostgreSQL
+- **Dual-Agent Routing**: Intelligent handoffs between agents
+- **MCP Tools**: 5 CRUD operations accessible via chat
+- **Session Management**: Secure JWT-based authentication
+
+**Traditional Todo Management:**
+- **Task CRUD**: Create, read, update, delete tasks
+- **Filtering & Search**: Advanced task filtering
+- **Profile Management**: User settings and password change
+- **Authentication**: Better Auth with JWT tokens
 
 ---
 
-**Project**: Todo Full-Stack Application
-**Phase**: 2 (Complete ✅)
-**Architecture**: FastAPI + Next.js 16+
-**Status**: 🎉 **Ready for Production**
+**Project**: ChatKit + Agents + MCP Integration - Phase 3
+**Branch**: `008-chatkit-integration`
+**Architecture**: FastAPI + Next.js 16+ + OpenAI ChatKit + OpenAI Agents SDK + MCP Protocol
+**Status**: ✅ **Complete - Ready for Production**
 
-This application demonstrates a complete modern full-stack architecture with proper separation of concerns, security best practices, and excellent developer experience.
+### Complete Feature Set
+- ✅ **ChatKit Integration**: Official OpenAI ChatKit UI via CDN
+- ✅ **Dual-Agent AI System**: Orchestrator + UrduSpecialist with intelligent routing
+- ✅ **MCP Protocol**: 5 CRUD tools accessible via natural language
+- ✅ **Thread Persistence**: Automatic PostgreSQL storage with user isolation
+- ✅ **Natural Language Tasks**: English + Urdu support for task management
+- ✅ **Modern UI**: Technical Editorial design with cream/orange palette
+- ✅ **Full CRUD**: Traditional task management + AI-powered chat interface
+- ✅ **Security**: Multi-layer user isolation with JWT + RLS + query filtering
+- ✅ **Setup**: Automated environment validation and database migration
+
+This application demonstrates a complete modern full-stack architecture with AI integration, proper separation of concerns, security best practices, and excellent developer experience.

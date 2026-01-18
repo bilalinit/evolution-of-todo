@@ -218,6 +218,16 @@ export const APP = {
 } as const;
 
 // ============================================================================
+// ENVIRONMENT
+// ============================================================================
+
+/**
+ * Development mode flag - used to control debug logging
+ * Only true in development environment, false in production
+ */
+export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+
+// ============================================================================
 // COMBINED EXPORTS
 // ============================================================================
 

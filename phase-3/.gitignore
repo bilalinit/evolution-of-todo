@@ -40,3 +40,35 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Phase 3 - ChatKit Integration (runtime files)
+logs/
+status.server.sh
+stop.server.sh
+script.md
+start.server.sh
+
+# Backend runtime files
+backend/.venv/
+backend/uv.lock
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+backend/*.log
+backend/logs/
+
+# Frontend runtime files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/.turbo/
+frontend/coverage/
+frontend/*.log
+frontend/.env*.local
+frontend/.vercel/
+frontend/.sentryclirc
+frontend/next-env.d.ts
+frontend/.contentlayer/
+frontend/tsconfig.tsbuildinfo

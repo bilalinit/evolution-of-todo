@@ -6,7 +6,7 @@ Configures CORS, includes routers, and sets up startup/shutdown events.
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException, Body
+from fastapi import FastAPI, Depends, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from contextlib import asynccontextmanager
@@ -21,7 +21,23 @@ from backend.agents import orchestrator as base_orchestrator, urdu_agent as base
 from agents import Runner, RunConfig, Agent
 from agents.mcp import MCPServerStdio
 from dotenv import load_dotenv
+import openai
+import os
+import uuid
+from datetime import datetime, timezone
+from backend.models.chatkit import SessionMetadata, SessionCreateResponse
+from backend.chatkit_store import PostgresChatKitStore
+from backend.chatkit_server import TodoChatKitServer
 load_dotenv()
+
+# Initialize OpenAI client for ChatKit sessions
+openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_async_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Global ChatKit store and server instances
+chatkit_store = None
+chatkit_server = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,6 +49,13 @@ async def lifespan(app: FastAPI):
     print("✅ Database initialized")
     print("✅ Agent system ready")
     print("✅ MCP tools configured")
+
+    # Initialize ChatKit store and server
+    global chatkit_store, chatkit_server
+    from backend.database import async_session_factory
+    chatkit_store = PostgresChatKitStore(async_session_factory)
+    chatkit_server = TodoChatKitServer(chatkit_store)  # Uses Xiaomi client from agents.py
+    print("✅ ChatKit store and server initialized")
 
     yield
 
@@ -222,6 +245,80 @@ async def chat_endpoint(
             urdu_agent.mcp_servers = []
         except:
             pass
+
+
+# ==================== ChatKit Endpoint ====================
+# Using ChatKitServer.process() pattern from chatkit-2 skill
+# This single endpoint handles ALL ChatKit operations
+
+@app.post("/api/chatkit")
+async def chatkit_endpoint(
+    request: Request,
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Main ChatKit endpoint - handles ALL ChatKit operations.
+    
+    Uses ChatKitServer.process() which handles:
+    - threads.create, threads.get, threads.list
+    - messages.create, messages.list  
+    - runs.create (with streaming response)
+    - All other ChatKit protocol operations
+    """
+    from chatkit.server import StreamingResult
+    from fastapi.responses import StreamingResponse, Response
+    
+    try:
+        print(f"🔍 ChatKit endpoint called for user: {user_id}")
+        
+        # Create context for user isolation
+        context = {
+            "user_id": user_id,
+            "metadata": {
+                "userInfo": {
+                    "id": user_id,
+                    "name": user_id
+                }
+            }
+        }
+        
+        # Get raw request body
+        body = await request.body()
+        print(f"🔍 ChatKit request body length: {len(body)} bytes")
+        
+        # Process through ChatKit server - handles all protocol operations
+        result = await chatkit_server.process(body, context)
+        
+        # Handle streaming vs JSON responses
+        if isinstance(result, StreamingResult):
+            print(f"🔍 ChatKit returning streaming response")
+            return StreamingResponse(
+                result,
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            print(f"🔍 ChatKit returning JSON response")
+            return Response(
+                content=result.json,
+                media_type="application/json"
+            )
+            
+    except Exception as e:
+        print(f"❌ ChatKit endpoint error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "INTERNAL_ERROR", 
+                "message": f"ChatKit processing error: {str(e)}"
+            }
+        )
 
 # Add exception handlers
 app.add_exception_handler(ValidationError, validation_exception_handler)

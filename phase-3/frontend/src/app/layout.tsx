@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -16,6 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        {/* ChatKit CDN Script - MUST be in body for Next.js 16+ App Router */}
+        <Script
+          src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
+          strategy="afterInteractive"
+        />
         <Providers>
           <AuthProvider>{children}</AuthProvider>
         </Providers>

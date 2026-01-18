@@ -42,11 +42,10 @@ export function HomeNavbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? "bg-background/95 backdrop-blur-md border-b border-foreground/10 shadow-sm"
-            : "bg-background border-b border-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+          ? "bg-background/95 backdrop-blur-md border-b border-foreground/10 shadow-sm"
+          : "bg-background border-b border-transparent"
+          }`}
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
@@ -99,6 +98,19 @@ export function HomeNavbar() {
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <Link
+                        href="/chatkit"
+                        className="text-sm font-medium text-foreground-secondary hover:text-accent transition-colors relative group"
+                      >
+                        AI Assistant
+                        <span className="absolute -bottom-1 left-0 w-0 h-px bg-accent transition-all duration-300 group-hover:w-full" />
+                      </Link>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
                     >
                       <Link
                         href="/profile"
@@ -263,6 +275,19 @@ export function HomeNavbar() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <Link
+                          href="/chatkit"
+                          className="block py-2 text-foreground-secondary hover:text-accent transition-colors font-medium"
+                          onClick={closeMobileMenu}
+                        >
+                          AI Assistant
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                       >
                         <Link
                           href="/profile"

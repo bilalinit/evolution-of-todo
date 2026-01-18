@@ -425,43 +425,46 @@ Located at `.claude/skills/mcp-integration/`
 ### ChatKit Skill
 Located at `.claude/skills/chatkit/`
 
-**When to use**: Building real-time chat interfaces and messaging features with modern chat UI components and protocols.
+**When to use**: Building ChatKit + OpenAI Agents SDK integrations with universal patterns for any framework and authentication system.
 
 **Key capabilities**:
-- **Real-time Messaging**: WebSocket integration for live chat updates
-- **Chat UI Components**: Pre-built message bubbles, input areas, user lists
-- **Message State Management**: Handling message delivery, read receipts, typing indicators
-- **User Presence**: Online/offline status, typing indicators, user avatars
-- **Media Handling**: Image/file sharing in chat conversations
+- **ChatKit Integration**: OpenAI ChatKit with OpenAI Agents SDK (any framework)
+- **Custom ChatKitServer**: Implementation patterns for FastAPI, Express, Django, etc.
+- **Frontend Integration**: React, Next.js, Vue, Svelte integration patterns
+- **User Context Injection**: Personalized AI responses with user data
+- **Tool Integration**: MCP tools and function calling in ChatKit conversations
+- **Data Persistence**: Chat threads and messages with any database
+- **Authentication Patterns**: JWT and session management for any auth provider
 
 **Usage patterns**:
-- **Direct Chat**: One-to-one messaging interfaces
-- **Group Chat**: Multi-user conversations with participant management
-- **Channel-based**: Topic-based chat rooms and channels
-- **Threaded Replies**: Nested conversation threads
-- **Message History**: Loading previous messages with infinite scroll
+- **Framework-Agnostic Backend**: FastAPI, Express, Django, Flask patterns
+- **Frontend Integration**: Next.js 16+ App Router, React, Vue, Svelte
+- **User Isolation**: Multi-user systems with JWT-based filtering
+- **Streaming Responses**: Server-Sent Events (SSE) for real-time updates
+- **MCP Integration**: Dynamic MCP server creation per request
 
-**UI Components**:
-- **Message Bubbles**: Sent/received message styling with timestamps
-- **Input Areas**: Rich text input with attachment support
-- **User Lists**: Online/offline user presence indicators
-- **Chat Headers**: Conversation info and participant management
-- **Empty States**: Welcome screens and no-messages states
+**Architecture patterns**:
+- **System Flow**: Frontend → API Proxy → Backend → ChatKit → Agents SDK → Tools
+- **Single Endpoint**: One `/api/chatkit` route handles all operations
+- **PostgreSQL Store**: User-isolated database patterns with 14 required methods
+- **Xiaomi Model**: "mimo-v2-flash" integration via AsyncOpenAI client
+- **Error Handling**: Comprehensive patterns for common ChatKit errors
 
 **Integration patterns**:
-- **WebSocket Providers**: Socket.io, Pusher, or custom WebSocket implementations
-- **State Management**: Zustand, Redux, or React Context for chat state
-- **Real-time Updates**: Optimistic UI updates and conflict resolution
-- **Offline Support**: Message queuing and sync when reconnected
+- **CDN Loading**: Script loading with `afterInteractive` strategy
+- **Web Components**: `customElements.whenDefined()` detection
+- **JWT Extraction**: Token validation and user context passing
+- **SSE Streaming**: Proper headers and format for ChatKit compatibility
+- **MCP Lifecycle**: Per-request server creation with cleanup
 
 **Common patterns**:
-- **Typing Indicators**: Show when users are typing with debouncing
-- **Read Receipts**: Visual indicators for message delivery and read status
-- **Message Status**: Sending, delivered, read, failed states
-- **User Mentions**: @username highlighting and notifications
-- **Emoji Reactions**: Quick reactions to messages
+- **User Isolation**: Filter all database queries by `user_id` from JWT
+- **Session Management**: ChatKit handles sessions internally (no separate endpoints)
+- **Conversation History**: Build context for agents from thread items
+- **Language Detection**: Urdu/English based on character detection
+- **Health Checks**: Backend and frontend health verification
 
-**Required reading**: `concepts/CHAT_PATTERNS.md`, `concepts/REALTIME_SYNC.md`, `concepts/MESSAGE_STATES.md`
+**Required reading**: `concepts/BACKEND_PATTERNS.md`, `concepts/FRONTEND_PATTERNS.md`, `concepts/STORE_PATTERNS.md`, `concepts/AGENTS_INTEGRATION.md`, `references/API_REFERENCE.md`
 
 ---
 
@@ -469,15 +472,8 @@ Located at `.claude/skills/chatkit/`
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 008-chatkit-integration: Added ChatKit + OpenAI Agents SDK integration with universal patterns for any framework
 - 007-agents-mcp: Added OpenAI Agents SDK, MCP integration, dual-agent system, chatbot UI
 - 006-frontend-design: Added Modern Technical Editorial UI design system
-- 005-fastapi-backend: Added Python 3.11+ + FastAPI, uvicorn, SQLModel, asyncpg, python-jose, pydantic
 
 ## Active Technologies
-- Python 3.12+ (backend), TypeScript 5.x (frontend) (007-agents-mcp)
-- Neon Serverless PostgreSQL with SQLModel ORM (007-agents-mcp)
-- OpenAI Agents SDK 0.6.5+ (007-agents-mcp)
-- MCP SDK 0.6.5+ (007-agents-mcp)
-- Xiaomi mimo-v2-flash model (007-agents-mcp)
-- Better Auth 1.4.9 (007-agents-mcp)
-- Next.js 16.1.1 (007-agents-mcp)

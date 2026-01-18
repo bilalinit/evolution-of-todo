@@ -1,21 +1,68 @@
-# ChatKit Frontend Patterns
+# Frontend Integration Patterns
 
-## Overview
-This document covers frontend integration patterns for ChatKit using React and the `@openai/chatkit-react` library.
+Complete React/Next.js frontend implementation for ChatKit integration.
 
-## Prerequisites
+> [!IMPORTANT]
+> ChatKit uses a **single endpoint** architecture. All operations go through one `/api/chatkit` proxy route. Do NOT create separate `/session`, `/threads`, `/refresh` routes.
 
-### 1. CDN Script (REQUIRED)
-Add to your HTML. Without this, the chat UI won't render.
+## Project Structure
 
-**Next.js 16+ App Router** (`app/layout.tsx`):
-```tsx
+### Required Files (Minimal)
+```
+app/
+├── layout.tsx              # CDN script loading
+├── chatbot/
+│   └── page.tsx            # ChatKit component
+└── api/
+    └── chatkit/
+        └── route.ts        # Single proxy (handles EVERYTHING)
+```
+
+> [!CAUTION]
+> Do NOT create these - they are NOT needed:
+> - `/api/chatkit/session/` ❌
+> - `/api/chatkit/refresh/` ❌
+> - `/api/chatkit/threads/` ❌
+
+## Customization Required
+
+> [!NOTE]
+> This skill provides **ChatKit-specific patterns** that are universal. Your **auth provider and styling** will vary.
+
+### Project-Specific (must adapt)
+
+| Category | Item | Example Variations |
+|----------|------|-------------------|
+| **Auth** | Token endpoint URL | `http://localhost:3000/api/auth/token` |
+| | Cookie names | `session`, `auth_token`, `better-auth.session_token` |
+| **Backend** | Backend URL | `http://localhost:8000`, `https://api.myapp.com` |
+| **Styling** | Theme colors | `#FF6B4A`, `#3B82F6` |
+| | Fonts | `DM Sans`, `Inter`, `Roboto` |
+
+### Universal (no changes needed)
+
+- CDN script loading pattern
+- `customElements.whenDefined()` for loading detection
+- `useChatKit` with `url/domainKey` pattern
+- Streaming response handling in proxy
+- Error/loading state patterns
+
+## CDN Script Loading
+
+### Root Layout (app/layout.tsx)
+
+```typescript
 import Script from 'next/script';
 
-export default function Layout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
+        {/* ChatKit CDN Script - REQUIRED */}
         <Script
           src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
           strategy="afterInteractive"
@@ -27,880 +74,266 @@ export default function Layout({ children }) {
 }
 ```
 
-**Next.js Pages Router** (`pages/_document.tsx`):
-```tsx
-import { Html, Head, Main, NextScript } from 'next/document';
-// Note: Do NOT put in <Head>. Put in <body>.
+### Important Notes for Next.js
 
-export default function Document() {
-  return (
-    <Html>
-      <Head />
-      <body>
-        <Main />
-        <NextScript />
-        <script
-          src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
-          async
-        />
-      </body>
-    </Html>
-  );
-}
-```
+1. **Script Placement**: Must be in `<body>`, not `<head>`
+2. **Strategy**: Use `afterInteractive` for App Router
+3. **No Event Handlers**: Next.js 16+ doesn't allow onLoad on Script
+4. **Loading Detection**: Use `customElements.whenDefined()` instead
 
-**Vite/CRA** (`index.html`):
-```html
-<head>
-  <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
-</head>
-```
+## ChatKit Component
 
-### 2. Install React Package
-```bash
-npm install @openai/chatkit-react
-```
+### Main Component (app/chatbot/page.tsx)
 
-## Authentication Migration
-
-> **⚠️ Breaking Change**: ChatKit has moved from `domainKey` to token-based authentication.
-
-**Old Pattern (Deprecated):**
 ```typescript
-api: {
-  url: 'http://localhost:8000/api/chatkit',
-  domainKey: 'localhost'  // ❌ No longer supported
-}
-```
+'use client'
 
-**New Pattern (Required):**
-```typescript
-api: {
-  async getClientSecret(existing) {
-    const res = await fetch('/api/chatkit/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const { client_secret } = await res.json();
-    return client_secret;
-  }
-}
-```
+import { useState, useEffect } from 'react'
+import { ChatKit, useChatKit } from '@openai/chatkit-react'
 
-**Backend Requirements:**
-- `uv add openai` (for session management)
-- `OPENAI_API_KEY` environment variable
-- `/api/chatkit/session` endpoint
-- `/api/chatkit/refresh` endpoint (for token refresh)
+export default function ChatBotPage() {
+  const [error, setError] = useState<string | null>(null)
+  const [isReady, setIsReady] = useState(false)
 
-## Security & Deployment
-
-### Domain Allowlisting (CRITICAL)
-
-> **⚠️ Required for Production**: ChatKit requires domain registration in the OpenAI Platform dashboard.
-
-**Why This Matters:**
-- ChatKit will **refuse to load** on unregistered domains
-- This is a security feature to prevent unauthorized usage
-- Both development and production domains must be registered
-
-**How to Configure:**
-
-1. **Visit**: https://platform.openai.com/settings/organization/security/domain-allowlist
-
-2. **Add Your Domains**:
-   - **Development**: `localhost`, `127.0.0.1`
-   - **Staging**: `staging.yourapp.com`
-   - **Production**: `yourapp.com`, `www.yourapp.com`
-
-3. **Wait for Propagation**: Changes may take a few minutes to take effect
-
-### Common Domain Allowlisting Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| `Invalid domain` error | Domain not registered | Add domain to OpenAI allowlist |
-| `FatalAppError` on load | Missing domainKey | Add `domainKey: 'your-domain.com'` |
-| Works on localhost, fails on deploy | Production domain not allowed | Add production domain to allowlist |
-| `403 Forbidden` | Domain mismatch | Ensure domainKey matches registered domain |
-
-### Security Best Practices
-
-#### 1. Environment-Specific Configuration
-```typescript
-// config.ts
-export const CHATKIT_CONFIG = {
-  development: {
-    domainKey: 'localhost',
-    api: { url: 'http://localhost:8000/api/chatkit' }
-  },
-  production: {
-    domainKey: 'yourapp.com',
-    api: { url: 'https://api.yourapp.com/api/chatkit' }
-  }
-};
-```
-
-#### 2. Secure Session Management
-```typescript
-// Always use HTTPS in production
-const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-const baseUrl = `${protocol}//${window.location.host}`;
-
-// Pass user authentication context
-const { control } = useChatKit({
-  api: {
-    async getClientSecret(existing) {
-      const res = await fetch(`${baseUrl}/api/chatkit/session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userAuthToken}` // Pass user auth
-        },
-        credentials: 'include' // Include cookies if needed
-      });
-      const { client_secret } = await res.json();
-      return client_secret;
-    }
-  }
-});
-```
-
-#### 3. Rate Limiting & Abuse Prevention
-- Implement rate limiting on `/api/chatkit/session` endpoint
-- Monitor session creation frequency per user/IP
-- Use user authentication to prevent abuse
-
-#### 4. Data Privacy
-- ChatKit conversations may be logged by OpenAI
-- Implement data retention policies
-- Consider user consent for AI processing
-
-### Deployment Checklist
-
-- [ ] **Domain Registration**: All domains added to OpenAI allowlist
-- [ ] **HTTPS**: Production uses HTTPS (required for security)
-- [ ] **Environment Variables**: `OPENAI_API_KEY` set in production
-- [ ] **CORS**: Backend allows frontend origin
-- [ ] **Rate Limiting**: Session endpoints protected
-- [ ] **Monitoring**: Error tracking configured
-- [ ] **User Isolation**: Multi-user context properly implemented
-
-### Production Debugging
-
-#### Check Domain Registration
-```javascript
-// Add to browser console to debug domain issues
-console.log('Current domain:', window.location.hostname);
-console.log('DomainKey in use:', 'your-domain-key'); // Check your config
-```
-
-#### Verify Session Endpoint
-```bash
-# Test session creation with production domain
-curl -X POST https://api.yourapp.com/api/chatkit/session \
-  -H "Content-Type: application/json" \
-  -w "\nStatus: %{http_code}\n"
-```
-
-#### Monitor for Domain Errors
-```typescript
-// Add to frontend error handling
-onError: ({ error }) => {
-  if (error.message.includes('domain')) {
-    console.error('Domain allowlisting issue:', error);
-    // Alert user to contact support
-  }
-}
-```
-
-## Basic Usage
-
-> **Next.js App Router**: ChatKit uses React hooks, so components must be client components. Add `'use client'` at the top.
-
-```tsx
-'use client';  // Required for Next.js App Router
-
-import { ChatKit, useChatKit } from '@openai/chatkit-react';
-
-function ChatComponent() {
-  const { control } = useChatKit({
-    api: {
-      async getClientSecret(existing) {
-        // Call backend session endpoint
-        const res = await fetch('/api/chatkit/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const { client_secret } = await res.json();
-        return client_secret;
-      },
-    },
-    theme: {
-      colorScheme: 'dark',
-    },
-  });
-
-  return <ChatKit control={control} className="h-full w-full" />;
-}
-```
-
-## Configuration Options
-
-### API Configuration
-
-#### NEW: Token-Based Authentication (Recommended)
-```typescript
-api: {
-  // Function to get client secret for authentication
-  async getClientSecret(existing: string | null): Promise<string> {
-    // existing: current token (for refresh), null for initial session
-    if (existing) {
-      // Refresh expired token
-      const res = await fetch('/api/chatkit/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_token: existing }),
-      });
-      const { client_secret } = await res.json();
-      return client_secret;
-    }
-
-    // Create new session
-    const res = await fetch('/api/chatkit/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const { client_secret } = await res.json();
-    return client_secret;
-  },
-
-  // Optional: Custom fetch for additional headers
-  fetch?: (url: string, options: RequestInit) => Promise<Response>;
-
-  // Optional: Custom URL (defaults to '/api/chatkit')
-  url?: string;
-}
-```
-
-#### OLD: Domain Key Authentication (Deprecated)
-```typescript
-api: {
-  url: string;           // Backend ChatKit endpoint URL
-  domainKey: string;     // 'localhost' for dev, your domain for prod
-  headers?: Record<string, string>;  // Optional auth headers
-}
-```
-> ⚠️ **Deprecated**: The `domainKey` approach is being phased out. Use `getClientSecret()` instead.
-
-### Theme Configuration
-```typescript
-theme: {
-  colorScheme: 'dark' | 'light';
-  color: {
-    grayscale: { hue: number; tint: number; shade: number };
-    accent: { primary: string; level: number };
-  };
-  radius: 'round' | 'square';
-}
-```
-
-### Start Screen Configuration
-```typescript
-startScreen: {
-  greeting: string;
-  prompts: Array<{
-    label: string;    // Display text (NOT 'name'!)
-    prompt: string;   // Text to send when clicked
-  }>;
-}
-```
-
-**IMPORTANT**: Use `label`, NOT `name`. Using `name` will cause errors.
-
-### Composer Configuration
-```typescript
-composer: {
-  placeholder: string;
-}
-```
-
-## Thread Persistence
-
-Store thread ID in localStorage to persist conversations:
-
-```tsx
-function ChatComponent() {
-  const [initialThread, setInitialThread] = useState<string | null>(null);
-
+  // Enhanced loading detection
   useEffect(() => {
-    const savedThread = localStorage.getItem('chatkit-thread-id');
-    setInitialThread(savedThread);
-  }, []);
+    if (typeof window === 'undefined') return
 
-  const { control } = useChatKit({
-    api: {
-      async getClientSecret(existing) {
-        const res = await fetch('/api/chatkit/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const { client_secret } = await res.json();
-        return client_secret;
-      },
-    },
-    initialThread: initialThread,
-    onThreadChange: ({ threadId }) => {
-      if (threadId) {
-        localStorage.setItem('chatkit-thread-id', threadId);
+    // Check if already defined
+    if (customElements.get('openai-chatkit')) {
+      setIsReady(true)
+      return
+    }
+
+    // Wait for web component to be defined
+    customElements.whenDefined('openai-chatkit')
+      .then(() => {
+        console.log('✅ ChatKit web component ready')
+        setIsReady(true)
+      })
+      .catch((err) => {
+        console.error('❌ ChatKit failed to load:', err)
+        setError('ChatKit failed to load. Please refresh the page.')
+      })
+
+    // Timeout fallback
+    const timeout = setTimeout(() => {
+      if (!customElements.get('openai-chatkit')) {
+        setError('ChatKit took too long to load.')
       }
-    },
-  });
+    }, 15000)
 
-  return <ChatKit control={control} />;
-}
-```
+    return () => clearTimeout(timeout)
+  }, [])
 
-## Authenticated ChatKit
-
-Pass user ID to backend for multi-user support:
-
-```tsx
-function AuthenticatedChat({ user }: { user: User }) {
+  // CRITICAL: Use url/domainKey pattern (NOT getClientSecret)
   const { control } = useChatKit({
     api: {
-      async getClientSecret(existing) {
-        // Pass user ID as query parameter for user isolation
-        const res = await fetch(`/api/chatkit/session?userId=${user.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const { client_secret } = await res.json();
-        return client_secret;
-      },
+      url: '/api/chatkit',  // Single endpoint for everything
+      domainKey: 'local-dev',
     },
-    startScreen: {
-      greeting: `Hello ${user.name}! How can I help you?`,
-      prompts: [
-        { label: 'What is this about?', prompt: 'What is this about?' },
-        {
-          label: 'Help me understand',
-          prompt: `Explain as a ${user.educationLevel} level learner`
-        },
-      ],
-    },
-  });
-
-  return <ChatKit control={control} />;
-}
-```
-
-## Full Component Example
-
-A complete component with authentication, thread persistence, and custom styling:
-
-```tsx
-'use client';  // Required for Next.js App Router
-
-import React, { useState, useEffect } from 'react';
-import { ChatKit, useChatKit } from '@openai/chatkit-react';
-import styles from './ChatBot.module.css';
-
-interface User {
-  id: string;
-  name: string;
-  educationLevel: string;
-  programmingExperience: string;
-}
-
-interface ChatBotProps {
-  user: User;
-  backendUrl?: string;
-}
-
-const ChatBotAuthenticated: React.FC<ChatBotProps> = ({ 
-  user, 
-  backendUrl = 'http://localhost:8000' 
-}) => {
-  const [initialThread, setInitialThread] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedThread = localStorage.getItem('chatkit-thread-id');
-    setInitialThread(savedThread);
-  }, []);
-
-  const getPersonalizedGreeting = () => {
-    if (user.programmingExperience?.includes('beginner')) {
-      return `Hello ${user.name}! I'll explain things at a beginner-friendly level.`;
-    }
-    return `Hello ${user.name}! How can I help you today?`;
-  };
-
-  const { control } = useChatKit({
-    api: {
-      async getClientSecret(existing) {
-        // Pass user context for multi-user isolation
-        const res = await fetch(`/api/chatkit/session?userId=${user.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const { client_secret } = await res.json();
-        return client_secret;
-      },
-    },
-    initialThread: initialThread,
     theme: {
       colorScheme: 'light',
       color: {
         grayscale: { hue: 220, tint: 6, shade: -1 },
-        accent: { primary: '#3578e5', level: 1 },
+        accent: { primary: '#FF6B4A', level: 1 },  // Customize this
       },
       radius: 'round',
     },
     startScreen: {
-      greeting: getPersonalizedGreeting(),
+      greeting: 'Hello! How can I help you?',
       prompts: [
-        { label: 'What is this about?', prompt: 'What is this about?' },
-        { label: 'Help me understand', prompt: 'Help me understand a concept' },
+        { label: 'Example prompt 1', prompt: 'Do something' },
+        { label: 'Example prompt 2', prompt: 'Do something else' },
       ],
     },
     composer: {
-      placeholder: `Ask a question...`,
+      placeholder: 'Type your message...',
     },
-    onThreadChange: ({ threadId }) => {
-      if (threadId) {
-        localStorage.setItem('chatkit-thread-id', threadId);
-      }
+    onError: ({ error: chatError }) => {
+      console.error('ChatKit error:', chatError)
+      setError(`Chat error: ${chatError.message || String(chatError)}`)
     },
-    onError: ({ error }) => console.error('ChatKit error:', error),
-  });
+  })
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <h2>ChatKit Error</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    )
+  }
+
+  if (!isReady) {
+    return (
+      <div className="loading-container">
+        <h2>Loading ChatKit...</h2>
+        <div className="spinner" />
+      </div>
+    )
+  }
 
   return (
-    <div className={styles.chatContainer}>
-      <div className={styles.chatHeader}>
-        <h2>Chat with {user.name}</h2>
-        <button 
-          onClick={() => {
-            localStorage.removeItem('chatkit-thread-id');
-            window.location.reload();
-          }}
-        >
-          + New Chat
-        </button>
-      </div>
-      <div className={styles.chatkitContainer}>
-        <ChatKit control={control} className={styles.chatkitContainer} />
-      </div>
+    <div style={{ height: 'calc(100vh - 64px)' }}>
+      <ChatKit control={control} style={{ width: '100%', height: '100%', minHeight: '500px' }} />
     </div>
-  );
-};
-
-export default ChatBotAuthenticated;
-```
-
-### CSS Module
-```css
-/* ChatBot.module.css */
-.chatContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.chatHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.chatkitContainer {
-  flex: 1;
-  overflow: hidden;
-  min-height: 500px;
+  )
 }
 ```
 
-## Popup/Floating Chat Pattern
+## Next.js API Proxy Route
 
-```tsx
-function FloatingChat() {
-  const [isOpen, setIsOpen] = useState(false);
+### Single Proxy (app/api/chatkit/route.ts)
 
-  const { control } = useChatKit({
-    api: {
-      async getClientSecret(existing) {
-        const res = await fetch('/api/chatkit/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const { client_secret } = await res.json();
-        return client_secret;
-      },
-    },
-    theme: { colorScheme: 'dark' },
-  });
-
-  return (
-    <>
-      {/* Floating button */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{
-            position: 'fixed',
-            bottom: '2rem',
-            right: '2rem',
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #4361ee, #4cc9f0)',
-            border: 'none',
-            cursor: 'pointer',
-            zIndex: 100,
-          }}
-        >
-          💬
-        </button>
-      )}
-
-      {/* Chat popup */}
-      {isOpen && (
-        <div style={{
-          position: 'fixed',
-          bottom: '2rem',
-          right: '2rem',
-          width: '420px',
-          height: '600px',
-          background: '#16213e',
-          borderRadius: '1rem',
-          boxShadow: '0 10px 50px rgba(0, 0, 0, 0.5)',
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          <div style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Assistant</span>
-            <button onClick={() => setIsOpen(false)}>×</button>
-          </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <ChatKit control={control} className="h-full w-full" />
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-```
-
-## Error Handling
-
-```tsx
-const { control } = useChatKit({
-  // ...config
-  onError: ({ error }) => {
-    console.error('ChatKit error:', error);
-    // Show user-friendly error message
-    // Log to analytics
-  },
-});
-```
-
-## Advanced Patterns
-
-### Custom Fetch Interceptor with Context Injection
-
-For production applications that need to inject authentication headers and page/user context into every request:
+> [!IMPORTANT]
+> This ONE endpoint handles ALL ChatKit operations. ChatKit SDK routes everything through here.
 
 ```typescript
-const { control } = useChatKit({
-  api: {
-    url: `${backendUrl}/chatkit`,
-    domainKey: domainKey,
+import { NextRequest, NextResponse } from 'next/server'
 
-    // Custom fetch to inject auth and context
-    fetch: async (url: string, options: RequestInit) => {
-      if (!isLoggedIn) {
-        throw new Error('User must be logged in');
-      }
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
-      const pageContext = getPageContext();
-      const userInfo = { id: userId, name: user.name };
-
-      // Inject metadata into request body
-      let modifiedOptions = { ...options };
-      if (modifiedOptions.body && typeof modifiedOptions.body === 'string') {
-        const parsed = JSON.parse(modifiedOptions.body);
-        if (parsed.params?.input) {
-          parsed.params.input.metadata = {
-            userId, userInfo, pageContext,
-            ...parsed.params.input.metadata,
-          };
-          modifiedOptions.body = JSON.stringify(parsed);
-        }
-      }
-
-      return fetch(url, {
-        ...modifiedOptions,
-        headers: {
-          ...modifiedOptions.headers,
-          'X-User-ID': userId,
-          'Content-Type': 'application/json',
-        },
-      });
-    },
-  },
-});
-```
-
-### Page Context Extraction
-
-Extract current page context to provide to the AI agent:
-
-```typescript
-const getPageContext = useCallback(() => {
-  if (typeof window === 'undefined') return null;
-
-  const metaDescription = document.querySelector('meta[name="description"]')
-    ?.getAttribute('content') || '';
-
-  const mainContent = document.querySelector('article') ||
-                     document.querySelector('main') ||
-                     document.body;
-
-  const headings = Array.from(mainContent.querySelectorAll('h1, h2, h3'))
-    .slice(0, 5)
-    .map(h => h.textContent?.trim())
-    .filter(Boolean)
-    .join(', ');
-
-  return {
-    url: window.location.href,
-    title: document.title,
-    path: window.location.pathname,
-    description: metaDescription,
-    headings: headings,
-  };
-}, []);
-```
-
-### Text Selection "Ask" Feature
-
-Allow users to select text on the page and ask questions about it:
-
-```typescript
-const [selectedText, setSelectedText] = useState('');
-const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
-
-useEffect(() => {
-  const handleSelection = () => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      setSelectedText('');
-      return;
+// TODO: Customize this for your auth provider
+async function getJWTTokenFromAuth(request: NextRequest): Promise<string | null> {
+  try {
+    const cookieHeader = request.headers.get('cookie')
+    if (!cookieHeader) {
+      console.log('[ChatKit] No cookies in request')
+      return null
     }
 
-    const selectedText = selection.toString().trim();
-    if (selectedText.length > 0) {
-      setSelectedText(selectedText);
+    // TODO: Replace with YOUR auth provider's token endpoint
+    const response = await fetch('http://localhost:3000/api/auth/token', {
+      method: 'GET',
+      headers: { 'cookie': cookieHeader },
+    })
 
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setSelectionPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10,
-      });
+    if (!response.ok) {
+      console.log('[ChatKit] Failed to get JWT token:', response.status)
+      return null
     }
-  };
 
-  document.addEventListener('selectionchange', handleSelection);
-  document.addEventListener('mouseup', handleSelection);
-
-  return () => {
-    document.removeEventListener('selectionchange', handleSelection);
-    document.removeEventListener('mouseup', handleSelection);
-  };
-}, []);
-
-const handleAskSelectedText = useCallback(async () => {
-  const pageContext = getPageContext();
-  const messageText = `Can you explain this from "${pageContext.title}":\n\n"${selectedText}"`;
-
-  if (!isOpen) {
-    setIsOpen(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const data = await response.json()
+    return data.token || null
+  } catch (error) {
+    console.error('[ChatKit] Error getting JWT token:', error)
+    return null
   }
+}
 
-  await sendUserMessage({
-    text: messageText,
-    newThread: false,
-  });
+export async function GET(request: NextRequest) {
+  try {
+    const backendResponse = await fetch(`${BACKEND_URL}/api/chatkit`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
 
-  window.getSelection()?.removeAllRanges();
-  setSelectedText('');
-}, [selectedText, isOpen, sendUserMessage, getPageContext]);
+    if (!backendResponse.ok) {
+      const error = await backendResponse.text()
+      return NextResponse.json({ error }, { status: backendResponse.status })
+    }
 
-// In your component:
-{selectedText && (
-  <button
-    onClick={handleAskSelectedText}
-    style={{
-      position: 'fixed',
-      left: `${selectionPosition.x}px`,
-      top: `${selectionPosition.y}px`,
-      transform: 'translate(-50%, -100%)',
-      zIndex: 1000,
-    }}
-  >
-    Ask about this
-  </button>
-)}
-```
-
-### Enhanced Script Loading Detection
-
-More robust detection for when ChatKit is ready:
-
-```typescript
-const [scriptStatus, setScriptStatus] = useState<'pending' | 'ready' | 'error'>(
-  typeof window !== 'undefined' && window.customElements?.get('openai-chatkit')
-    ? 'ready'
-    : 'pending'
-);
-
-useEffect(() => {
-  if (typeof window === 'undefined' || scriptStatus !== 'pending') return;
-
-  if (window.customElements?.get('openai-chatkit')) {
-    setScriptStatus('ready');
-    return;
+    return NextResponse.json(await backendResponse.json())
+  } catch (error) {
+    console.error('ChatKit GET error:', error)
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 })
   }
-
-  customElements.whenDefined('openai-chatkit').then(() => {
-    setScriptStatus('ready');
-  }).catch(() => {
-    setScriptStatus('error');
-  });
-}, []);
-
-// Only render when ready
-{isOpen && scriptStatus === 'ready' && <ChatKit control={control} />}
-{scriptStatus === 'error' && <div>ChatKit failed to load</div>}
-{scriptStatus === 'pending' && <div>Loading ChatKit...</div>}
-```
-
-### httpOnly Cookie Proxy (Next.js)
-
-When using httpOnly cookies for authentication (common in production):
-
-```typescript
-// app/api/chatkit/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+}
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const idToken = cookieStore.get("auth_token")?.value;
-
-  if (!idToken) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
   try {
-    const response = await fetch(`${API_BASE}/chatkit`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        "Content-Type": "application/json",
-        "X-User-ID": request.headers.get("X-User-ID") || "",
-      },
-      body: await request.text(),
-    });
+    const body = await request.arrayBuffer()
+    const token = await getJWTTokenFromAuth(request)
 
-    // Handle SSE streaming responses
-    if (response.headers.get("content-type")?.includes("text/event-stream")) {
-      return new Response(response.body, {
-        status: response.status,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        },
-      });
+    const headers: HeadersInit = { 'Content-Type': 'application/json' }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+      console.log('[ChatKit] Forwarding token to backend')
     }
 
-    return NextResponse.json(await response.json(), { status: response.status });
+    const backendResponse = await fetch(`${BACKEND_URL}/api/chatkit`, {
+      method: 'POST',
+      headers,
+      body,
+    })
+
+    const contentType = backendResponse.headers.get('content-type') || ''
+
+    // Handle streaming response (for chat messages)
+    if (contentType.includes('text/event-stream')) {
+      if (!backendResponse.body) {
+        return NextResponse.json({ error: 'No response body' }, { status: 500 })
+      }
+
+      return new Response(backendResponse.body, {
+        status: backendResponse.status,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
+    }
+
+    // Handle JSON response (for thread operations)
+    if (!backendResponse.ok) {
+      const error = await backendResponse.text()
+      return NextResponse.json({ error }, { status: backendResponse.status })
+    }
+
+    return NextResponse.json(await backendResponse.json())
   } catch (error) {
-    console.error("[ChatKit Proxy] Error:", error);
-    return NextResponse.json({ error: "ChatKit proxy request failed" }, { status: 500 });
+    console.error('ChatKit POST error:', error)
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 })
   }
 }
 ```
 
-Frontend usage with proxy:
+## Common Pitfalls & Solutions
 
-```typescript
-const { control } = useChatKit({
-  api: {
-    url: "/api/chatkit", // Proxy handles auth
-    domainKey: domainKey,
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| ChatKit not loading | CDN script not in body | Move `<Script>` inside `<body>` |
+| "useChatKit error" | Using `getClientSecret` pattern | Use `url/domainKey` pattern instead |
+| Auth not working | JWT not forwarded | Check `getJWTTokenFromAuth` function |
+| Blank screen | Component rendered before CDN loads | Use `customElements.whenDefined()` |
+| Streaming not working | Response not passed through | Use `new Response(stream)` pattern |
+| Cors errors | Backend URL wrong | Check `NEXT_PUBLIC_BACKEND_URL` |
 
-    // Still need custom fetch for context injection
-    fetch: async (input, options) => {
-      const userId = user.sub;
-      const pageContext = getPageContext();
+## Quick Adaptation Checklist
 
-      let modifiedOptions = { ...options };
-      if (modifiedOptions.body && typeof modifiedOptions.body === 'string') {
-        const parsed = JSON.parse(modifiedOptions.body);
-        if (parsed.params?.input) {
-          parsed.params.input.metadata = {
-            ...parsed.params.input.metadata,
-            userId,
-            userInfo: { id: userId, name: user.name },
-            pageContext,
-          };
-          modifiedOptions.body = JSON.stringify(parsed);
-        }
-      }
+When using this skill in a new project:
 
-      return fetch(input, {
-        ...modifiedOptions,
-        credentials: 'include', // Include cookies for proxy auth
-        headers: {
-          ...modifiedOptions.headers,
-          'X-User-ID': userId,
-          'Content-Type': 'application/json',
-        },
-      });
-    },
-  },
-});
+1. ☐ Add ChatKit CDN script to `layout.tsx`
+2. ☐ Create `app/chatbot/page.tsx` with ChatKit component
+3. ☐ Create `app/api/chatkit/route.ts` proxy
+4. ☐ Update `getJWTTokenFromAuth()` for your auth provider
+5. ☐ Update `NEXT_PUBLIC_BACKEND_URL` in `.env.local`
+6. ☐ Customize theme colors in `useChatKit()`
+7. ☐ Install dependencies: `npm install @openai/chatkit-react`
+
+## Environment Variables
+
+```env
+# .env.local
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+
+# Production
+NEXT_PUBLIC_BACKEND_URL=https://api.your-app.com
 ```
 
-## Tool Integration
+## Styling Tips
 
-ChatKit supports rich tool integration for browser APIs, external services, and UI interactions.
+```css
+/* Ensure ChatKit has proper sizing */
+openai-chatkit {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  display: block;
+}
+```
 
-**See `TOOL_INTEGRATION.md` for comprehensive guide including:**
-- Client-side tools (`onClientTool`) - email, modals, geolocation, file system
-- Composer tools - UI buttons for different interaction modes
-- Custom actions - server communication
-- OpenAI Agents SDK integration patterns
-- Error handling and security
-- Testing strategies
-
-## Common Errors
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| Blank screen | Missing CDN script | Add `chatkit.js` to HTML head |
-| `FatalAppError: Invalid input at api` | Missing `getClientSecret()` | Implement session endpoint + `getClientSecret()` function |
-| `Unrecognized key "name"` | Wrong prompt schema | Use `label`, not `name` |
-| `Unrecognized key "icon"` | Invalid property | Remove `icon` from prompts |
-| CORS error | Missing backend CORS | Add CORSMiddleware to FastAPI |
-| `404 /api/chatkit/session` | Missing session endpoint | Add `/api/chatkit/session` endpoint to backend |
-| `Session creation failed` | Missing OPENAI_API_KEY | Set `OPENAI_API_KEY` environment variable |
+This frontend implementation provides a complete, production-ready ChatKit integration with Next.js App Router.

@@ -44,10 +44,10 @@ export function Header() {
               Tasks
             </Link>
             <Link
-              href="/chatbot"
+              href="/chatkit"
               className="text-sm font-medium text-foreground hover:text-accent transition-colors"
             >
-              Chatbot
+              Agents
             </Link>
             <Link
               href="/profile"
