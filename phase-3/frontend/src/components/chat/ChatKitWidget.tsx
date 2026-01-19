@@ -28,7 +28,7 @@ export function ChatKitWidget() {
   const { control } = useChatKit({
     api: {
       url: '/api/chatkit',  // Next.js proxy handles auth injection
-      domainKey: 'local-dev',
+      domainKey: process.env.NEXT_PUBLIC_CHATKIT_DOMAIN_KEY || 'local-dev',
     },
     // Event handlers for debugging
     onReady: () => {
