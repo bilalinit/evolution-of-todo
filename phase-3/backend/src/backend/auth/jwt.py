@@ -3,6 +3,7 @@ JWT verification module using PyJWT with JWKS.
 Verifies Better Auth JWT tokens (EdDSA/Ed25519) and extracts user information.
 """
 from typing import Optional
+import os
 import jwt
 from jwt import PyJWKClient
 from functools import lru_cache
@@ -12,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 # JWKS client for fetching public keys from Better Auth
 # The URL should point to your Next.js frontend's JWKS endpoint
-JWKS_URL = "http://localhost:3000/api/auth/jwks"
+# Uses BETTER_AUTH_URL env var for deployment, falls back to localhost for dev
+BETTER_AUTH_URL = os.environ.get("BETTER_AUTH_URL", "http://localhost:3000")
+JWKS_URL = f"{BETTER_AUTH_URL}/api/auth/jwks"
 
 # Cache the JWKS client
 _jwks_client: Optional[PyJWKClient] = None
