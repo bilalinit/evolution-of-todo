@@ -102,10 +102,10 @@ export function Header() {
             Tasks
           </Link>
           <Link
-            href="/chatbot"
+            href="/chatkit"
             className="text-sm font-medium text-foreground hover:text-accent transition-colors py-2"
           >
-            Chatbot
+            Agents
           </Link>
           <Link
             href="/profile"

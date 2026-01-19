@@ -99,7 +99,8 @@ class TodoChatKitServer(ChatKitServer):
         server = MCPServerStdio(
             params={
                 "command": "uv",
-                "args": ["run", "task_serves_mcp_tools.py"]
+                "args": ["run", "task_serves_mcp_tools.py"],
+                "env": os.environ.copy()  # Pass environment variables to subprocess
             },
             client_session_timeout_seconds=60
         )
