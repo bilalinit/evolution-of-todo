@@ -1,0 +1,22 @@
+# Frontend values.yaml with Ingress enabled
+# This gives you nice URLs like http://todo.local
+
+replicaCount: 1
+
+image:
+  repository: nextjs-frontend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP     # ClusterIP when using Ingress (not LoadBalancer)
+  port: 3000
+
+env:
+  API_URL: "http://backend:8000"
+
+ingress:
+  enabled: true       # Enable Ingress
+  className: "nginx"
+  annotations: {
+    nginx.ingress.kubernetes.io/rewrite-target: /
