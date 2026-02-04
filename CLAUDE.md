@@ -509,10 +509,10 @@ Located at `.claude/skills/minikube-deployment/`
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
+- 010-features: Added Python 3.12+ (backend), TypeScript 5+ (frontend with Next.js 16+)
 - 009-minikube-deployment: Added Node.js 20+ (frontend), Python 3.12+ (backend)
 - 009-minikube-deployment: Added Python 3.12+, Node.js 20+
-- 008-chatkit-integration: Added ChatKit + OpenAI Agents SDK integration with universal patterns for any framework
 
 ## Active Technologies
-- Node.js 20+ (frontend), Python 3.12+ (backend) (009-minikube-deployment)
-- External Neon PostgreSQL (SSL required, serverless) (009-minikube-deployment)
+- Python 3.12+ (backend), TypeScript 5+ (frontend with Next.js 16+) (010-features)
+- Neon Serverless PostgreSQL (SSL required, serverless) (010-features)
