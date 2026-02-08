@@ -1,0 +1,70 @@
+---
+# Dapr Pub/Sub Subscriptions for WebSocket Service
+#
+# The websocket service subscribes to all task events and reminders
+# for real-time broadcast to connected clients.
+
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: websocket-service-task-created
+  namespace: default
+spec:
+  pubsubname: pubsub
+  topic: task-created
+  routes:
+    default: /events/task-created
+scopes:
+  - websocket-service
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: websocket-service-task-updated
+  namespace: default
+spec:
+  pubsubname: pubsub
+  topic: task-updated
+  routes:
+    default: /events/task-updated
+scopes:
+  - websocket-service
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: websocket-service-task-completed
+  namespace: default
+spec:
+  pubsubname: pubsub
+  topic: task-completed
+  routes:
+    default: /events/task-completed
+scopes:
+  - websocket-service
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: websocket-service-task-deleted
+  namespace: default
+spec:
+  pubsubname: pubsub
+  topic: task-deleted
+  routes:
+    default: /events/task-deleted
+scopes:
+  - websocket-service
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: websocket-service-reminder-due
+  namespace: default
+spec:
+  pubsubname: pubsub
+  topic: reminder-due
+  routes:
+    default: /events/reminder-due
+scopes:
+  - websocket-service

@@ -1,0 +1,115 @@
+replicaCount: 1
+
+image:
+  repository: todo-frontend
+  pullPolicy: IfNotPresent
+  tag: "v1"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: LoadBalancer
+  port: 3000
+  containerPort: 3000
+
+env:
+  NEXT_PUBLIC_DEMO_MODE: "false"
+  NEXT_PUBLIC_API_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_BACKEND_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_DEBUG: "true"
+  NEXT_PUBLIC_CHATKIT_API_URL: "http://127.0.0.1:8000/api/chatkit"
+  NEXT_PUBLIC_CHATKIT_DOMAIN_KEY: "your-domain-key-from-openai-platform"
+  NEXT_PUBLIC_WEBSOCKET_URL: "ws://127.0.0.1:8004"
+  BETTER_AUTH_URL: "http://frontend-todo-frontend:3000/"
+  # Server-side internal URL (for Next.js API routes running inside Kubernetes)
+  BACKEND_URL: "http://backend-todo-backend:8000"
+  NODE_ENV: "production"
+  PORT: "3000"
+
+# Build arguments for Docker image (must be set during docker build)
+# These are baked into the JavaScript bundle at build time
+buildArgs:
+  NEXT_PUBLIC_API_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_BACKEND_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_CHATKIT_API_URL: "http://127.0.0.1:8000/api/chatkit"
+  NEXT_PUBLIC_WEBSOCKET_URL: "ws://127.0.0.1:8004"
+
+envFrom:
+  - secretRef:
+      name: app-secrets
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs:
+  - name: gateway
+    sectionName: http
+  hostnames:
+  - chart-example.local
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /headers
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+volumeMounts: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

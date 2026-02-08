@@ -1,0 +1,325 @@
+# Event Contracts: Event-Driven Microservices with Dapr
+
+**Feature**: 011-microservices-dapr
+**Version**: 1.0.0
+**Date**: 2026-02-04
+
+## Overview
+
+This document defines all events published and consumed by the microservices architecture. All events follow a common schema and are published to Kafka topics via Dapr Pub/Sub.
+
+## Common Event Schema
+
+All events share this base structure:
+
+```yaml
+event_id: string (UUID)           # Unique identifier for this event instance
+event_type: string                # Event type name (matches topic)
+timestamp: string (ISO8601)       # When the event was created
+user_id: string                   # Authenticated user who triggered the event
+data: object                      # Event-specific payload
+```
+
+**Partitioning**: All topics are partitioned by `user_id` to ensure ordering per user.
+
+## Event Definitions
+
+### 1. task-created
+
+Published when a new task is created.
+
+**Topic**: `task-created`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "task-created"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  title: string
+  description: string (optional)
+  priority: string (low|medium|high)
+  due_date: string (ISO8601, optional)
+  reminder_at: string (ISO8601, optional)
+  recurring_rule: string (daily|weekly|monthly, optional)
+  recurring_end_date: string (ISO8601, optional)
+  tags: array[string]
+  created_at: string (ISO8601)
+```
+
+**Published By**: backend-api
+**Subscribers**: audit-service, websocket-service
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_type": "task-created",
+  "timestamp": "2026-02-04T10:30:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Complete project documentation",
+    "description": "Write comprehensive docs for the API",
+    "priority": "high",
+    "due_date": "2026-02-10T18:00:00Z",
+    "reminder_at": "2026-02-10T09:00:00Z",
+    "recurring_rule": "weekly",
+    "tags": ["documentation", "urgent"]
+  }
+}
+```
+
+---
+
+### 2. task-updated
+
+Published when an existing task is modified.
+
+**Topic**: `task-updated`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "task-updated"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  before: object              # Full task state before update
+  after: object               # Full task state after update
+  updated_at: string (ISO8601)
+```
+
+**Published By**: backend-api
+**Subscribers**: audit-service, websocket-service
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440001",
+  "event_type": "task-updated",
+  "timestamp": "2026-02-04T11:00:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "before": {
+      "title": "Complete project documentation",
+      "priority": "high"
+    },
+    "after": {
+      "title": "Complete project documentation and diagrams",
+      "priority": "medium"
+    },
+    "updated_at": "2026-02-04T11:00:00Z"
+  }
+}
+```
+
+---
+
+### 3. task-completed
+
+Published when a task is marked as complete.
+
+**Topic**: `task-completed`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "task-completed"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  title: string
+  recurring_rule: string (optional)
+  recurring_end_date: string (ISO8601, optional)
+  completed_at: string (ISO8601)
+```
+
+**Published By**: backend-api
+**Subscribers**: audit-service, recurring-service, websocket-service
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440002",
+  "event_type": "task-completed",
+  "timestamp": "2026-02-04T12:00:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Weekly standup",
+    "recurring_rule": "weekly",
+    "recurring_end_date": "2026-06-01T00:00:00Z",
+    "completed_at": "2026-02-04T12:00:00Z"
+  }
+}
+```
+
+---
+
+### 4. task-deleted
+
+Published when a task is deleted.
+
+**Topic**: `task-deleted`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "task-deleted"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  title: string
+  deleted_at: string (ISO8601)
+```
+
+**Published By**: backend-api
+**Subscribers**: audit-service, websocket-service
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440003",
+  "event_type": "task-deleted",
+  "timestamp": "2026-02-04T13:00:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Old task",
+    "deleted_at": "2026-02-04T13:00:00Z"
+  }
+}
+```
+
+---
+
+### 5. reminder-due
+
+Published when a task reminder is triggered.
+
+**Topic**: `reminder-due`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "reminder-due"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  title: string
+  due_date: string (ISO8601)
+  reminder_at: string (ISO8601)
+  priority: string (low|medium|high)
+  notification_id: string (UUID)
+```
+
+**Published By**: notification-service (triggered by Dapr cron binding)
+**Subscribers**: websocket-service
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440004",
+  "event_type": "reminder-due",
+  "timestamp": "2026-02-04T09:00:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Submit report",
+    "due_date": "2026-02-04T17:00:00Z",
+    "reminder_at": "2026-02-04T09:00:00Z",
+    "priority": "high",
+    "notification_id": "987fcdeb-51a2-43f1-a5e6-4fd65c67e123"
+  }
+}
+```
+
+---
+
+### 6. task-updates
+
+Aggregated event for real-time client updates.
+
+**Topic**: `task-updates`
+
+**Schema**:
+```yaml
+event_id: string (UUID)
+event_type: "task-updates"
+timestamp: string (ISO8601)
+user_id: string
+data:
+  task_id: string (UUID)
+  action: string (created|updated|completed|deleted)
+  snapshot: object (optional)  # Full task state after action
+```
+
+**Published By**: websocket-service (aggregates from other events)
+**Subscribers**: None (WebSocket broadcast to clients)
+
+**Example**:
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440005",
+  "event_type": "task-updates",
+  "timestamp": "2026-02-04T10:30:00Z",
+  "user_id": "user_abc123",
+  "data": {
+    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+    "action": "created",
+    "snapshot": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "Complete project documentation",
+      "priority": "high",
+      "completed": false
+    }
+  }
+}
+```
+
+## Topic Summary
+
+| Topic | Publisher | Subscribers | Purpose |
+|-------|-----------|-------------|---------|
+| `task-created` | backend-api | audit-service, websocket-service | New task created |
+| `task-updated` | backend-api | audit-service, websocket-service | Task modified |
+| `task-completed` | backend-api | audit-service, recurring-service, websocket-service | Task completed |
+| `task-deleted` | backend-api | audit-service, websocket-service | Task removed |
+| `reminder-due` | notification-service | websocket-service | Reminder triggered |
+| `task-updates` | websocket-service | None (WebSocket broadcast) | Real-time updates |
+
+## Delivery Guarantees
+
+- **At-Least-Once**: Each event is delivered at least once to each subscriber
+- **Idempotency**: Subscribers must track processed events using Dapr State Store (`check_and_mark_processed` utility)
+- **Ordering**: Events are ordered per `user_id` (Kafka partitioning)
+
+## Error Handling
+
+### Publisher Responsibilities
+
+- Generate unique `event_id` for each event
+- Include full context in `data` payload
+- Handle publish failures gracefully
+
+### Subscriber Responsibilities
+
+- Use `check_and_mark_processed` utility before processing
+- Record event processing after successful handling
+- Handle malformed events with logging
+- Use transaction for idempotency check + processing
+
+## Versioning
+
+Event schemas are versioned. If breaking changes are needed:
+1. Create new topic with version suffix (e.g., `task-created-v2`)
+2. Support both versions during transition
+3. Deprecate old version after migration

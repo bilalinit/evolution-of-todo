@@ -468,12 +468,51 @@ Located at `.claude/skills/chatkit/`
 
 ---
 
+### Minikube Deployment Skill
+Located at `.claude/skills/minikube-deployment/`
+
+**When to use**: Local Kubernetes deployment using Minikube, including Docker containerization and Helm chart management.
+
+**Key capabilities**:
+- **Local Kubernetes**: Minikube setup for development environments
+- **Docker Integration**: `eval $(minikube docker-env)` for building images directly in Minikube
+- **Helm Charts**: Chart creation and customization using `helm create`
+- **Multi-stage Dockerfiles**: Optimized builds for Next.js, FastAPI, and other frameworks
+- **Kubernetes Resources**: Services, Deployments, Ingress, and Secrets management
+
+**Core constraints**:
+- **NEVER** skip `eval $(minikube docker-env)` — critical for building images in Minikube's Docker
+- **NEVER** use `imagePullPolicy: Always` for local builds (use `IfNotPresent`)
+- **ALWAYS** read `.env` files first to understand required environment variables
+- **ALWAYS** create `.dockerignore` files alongside Dockerfiles
+- **NEVER** hardcode secrets in values.yaml — use Kubernetes Secrets
+
+**Usage patterns**:
+- Initialize Minikube: `minikube start` then `eval $(minikube docker-env)`
+- Build images: `docker build -t <name>:<tag> .` (after docker-env)
+- Create Helm charts: `helm create <chart-name>` then customize `values.yaml`
+- Expose services: `minikube tunnel` (in separate terminal) for LoadBalancer EXTERNAL-IP
+- Deploy: `helm install <release> <chart>`
+
+**Common mistakes to avoid**:
+- Building images without `eval $(minikube docker-env)` (builds in Docker Desktop instead)
+- Using `LoadBalancer` without `minikube tunnel` (EXTERNAL-IP stays `<pending>`)
+- Forgetting to set `API_URL` env var for frontend-backend communication
+- Hardcoding image names instead of using project-specific names
+- Hardcoding secrets in values.yaml instead of using Kubernetes Secrets
+
+**Required reading**: `patterns/WORKFLOW.md`, `patterns/DOCKERFILE_PATTERNS.md`, `patterns/HELM_PATTERNS.md`
+
+---
+
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
 ## Recent Changes
-- 008-chatkit-integration: Added ChatKit + OpenAI Agents SDK integration with universal patterns for any framework
-- 007-agents-mcp: Added OpenAI Agents SDK, MCP integration, dual-agent system, chatbot UI
-- 006-frontend-design: Added Modern Technical Editorial UI design system
+- 010-features: Added Python 3.12+ (backend), TypeScript 5+ (frontend with Next.js 16+)
+- 009-minikube-deployment: Added Node.js 20+ (frontend), Python 3.12+ (backend)
+- 009-minikube-deployment: Added Python 3.12+, Node.js 20+
 
 ## Active Technologies
+- Python 3.12+ (backend), TypeScript 5+ (frontend with Next.js 16+) (010-features)
+- Neon Serverless PostgreSQL (SSL required, serverless) (010-features)

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reminder-cron-binding
+  namespace: default
+data:
+  reminder-cron.yaml: |
+    apiVersion: dapr.io/v1alpha1
+    kind: Component
+    metadata:
+      name: reminder-cron
+    spec:
+      type: bindings.cron
+      version: v1
+      metadata:
+        - name: schedule
+          value: "@every 1m"

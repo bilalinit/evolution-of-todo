@@ -1,0 +1,599 @@
+openapi: 3.1.0
+info:
+  title: Todo API - Phase 5 Features
+  version: 1.0.0
+  description: API for Advanced Task Features (recurring tasks, reminders, tags, audit)
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: tasks
+    description: Task CRUD operations (extended)
+  - name: notifications
+    description: Notification management
+  - name: audit
+    description: Audit log access
+
+paths:
+  /api/{user_id}/tasks:
+    get:
+      tags: [tasks]
+      summary: List tasks with filtering
+      description: Retrieve all tasks for a user with optional filtering by status, priority, category, tags, and search
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, completed, pending]
+            default: all
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [work, personal, shopping, health, other]
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter by tag (exact match)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in title, description, and tags
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, due_date, priority, title]
+            default: created_at
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [tasks]
+      summary: Create a new task
+      description: Create a task with optional recurring, reminder, and tags fields
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/tasks/{task_id}:
+    get:
+      tags: [tasks]
+      summary: Get a specific task
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/tasks/{task_id}/complete:
+    patch:
+      tags: [tasks]
+      summary: Toggle task completion
+      description: Toggle task completion status. For recurring tasks, creates next instance when marked complete.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task completion toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/notifications:
+    get:
+      tags: [notifications]
+      summary: Get user notifications
+      description: Retrieve notifications for a user, optionally filtered by read status
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/notifications/{notification_id}/read:
+    post:
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/audit:
+    get:
+      tags: [audit]
+      summary: Get audit log
+      description: Retrieve audit log entries for a user, most recent first
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+        - name: event_type
+          in: query
+          schema:
+            type: string
+            enum: [task_created, task_updated, task_completed, task_deleted]
+      responses:
+        '200':
+          description: List of audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  schemas:
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        completed:
+          type: boolean
+        priority:
+          type: string
+          enum: [low, medium, high]
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        recurring_rule:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          nullable: true
+        recurring_end_date:
+          type: string
+          format: date-time
+          nullable: true
+        parent_task_id:
+          type: string
+          format: uuid
+          nullable: true
+        reminder_at:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_sent:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        user_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+          default: other
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        recurring_rule:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          nullable: true
+        recurring_end_date:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_at:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: string
+          description: Comma-separated tags
+          example: "urgent, meeting, frontend"
+          nullable: true
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          nullable: true
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        completed:
+          type: boolean
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high]
+          nullable: true
+        category:
+          type: string
+          enum: [work, personal, shopping, health, other]
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        recurring_rule:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          nullable: true
+        recurring_end_date:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_at:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: string
+          description: Comma-separated tags
+          example: "urgent, meeting"
+          nullable: true
+
+    TaskDetailResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/TaskResponse'
+
+    TaskListResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskResponse'
+        total:
+          type: integer
+        completed_count:
+          type: integer
+        pending_count:
+          type: integer
+
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    AuditLogResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum: [task_created, task_updated, task_completed, task_deleted]
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        data:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Missing or invalid authentication. Use Bearer token or X-User-Id header"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Access denied: you can only access your own data"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Task not found"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

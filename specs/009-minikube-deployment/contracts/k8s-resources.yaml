@@ -1,0 +1,504 @@
+# Kubernetes Resources Reference
+
+**Feature**: 009-minikube-deployment
+**Date**: 2026-01-26
+
+This document provides a complete reference of all Kubernetes resources created during the Minikube deployment.
+
+---
+
+## Complete Resource List
+
+### Frontend Resources
+
+| Resource | Name | Type | Purpose |
+|----------|------|------|---------|
+| Deployment | `frontend` | apps/v1 | Manages frontend pods |
+| Service | `frontend` | v1/LoadBalancer | Exposes frontend externally |
+| Pod | `frontend-<hash>` | v1 | Frontend application instance |
+
+### Backend Resources
+
+| Resource | Name | Type | Purpose |
+|----------|------|------|---------|
+| Deployment | `backend` | apps/v1 | Manages backend pods |
+| Service | `backend` | v1/ClusterIP | Internal backend access |
+| Pod | `backend-<hash>` | v1 | Backend application instance |
+
+### Configuration Resources
+
+| Resource | Name | Type | Purpose |
+|----------|------|------|---------|
+| Secret | `app-secrets` | v1/Secret | Sensitive configuration |
+| ConfigMap | `backend-config` | v1/ConfigMap | Non-sensitive configuration |
+
+---
+
+## Complete YAML Specifications
+
+### 1. Frontend Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: todo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/instance: frontend
+    spec:
+      serviceAccountName: frontend
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+      - name: frontend
+        image: todo-frontend:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        env:
+        - name: API_URL
+          value: "http://backend:8000"
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+```
+
+### 2. Frontend Service
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: todo-app
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 3000
+    targetPort: http
+  sessionAffinity: None
+```
+
+### 3. Frontend ServiceAccount
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: frontend
+automountServiceAccountToken: false
+```
+
+### 4. Backend Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/instance: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: todo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/instance: backend
+    spec:
+      serviceAccountName: backend
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: backend
+        image: todo-backend:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        envFrom:
+        - secretRef:
+            name: app-secrets
+        - configMapRef:
+            name: backend-config
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+```
+
+### 5. Backend Service
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/instance: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: todo-app
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: http
+  sessionAffinity: None
+```
+
+### 6. Backend ServiceAccount
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/instance: backend
+automountServiceAccountToken: false
+```
+
+### 7. Application Secrets
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  labels:
+    app.kubernetes.io/part-of: todo-app
+type: Opaque
+stringData:
+  # Database Connection (Neon PostgreSQL)
+  DATABASE_URL: "postgresql+asyncpg://user:password@ep-xxx.aws.neon.tech/dbname?sslmode=require"
+
+  # OpenAI API for Agents SDK
+  OPENAI_API_KEY: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+  # Xiaomi Model API Key
+  XIAOMI_API_KEY: "your_xiaomi_api_key_here"
+
+  # Better Auth JWT Secret
+  BETTER_AUTH_SECRET: "your-secret-key-here-min-32-chars"
+
+  # MCP Server Configuration
+  MCP_SERVER_TIMEOUT: "30"
+```
+
+### 8. Backend ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  labels:
+    app.kubernetes.io/part-of: todo-app
+data:
+  # Server Configuration
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  DEBUG: "false"
+
+  # CORS Configuration
+  CORS_ORIGINS: "http://localhost:3000,http://frontend:3000"
+```
+
+---
+
+## Resource Relationships
+
+```mermaid
+graph TD
+    User[User Browser] -->|HTTP| Tunnel[minikube tunnel]
+    Tunnel -->|TCP| LB[LoadBalancer Service: frontend]
+    LB --> Pod1[Frontend Pod]
+    LB --> Pod2[Frontend Pod]
+    Pod1 -->|HTTP| DNS[Kubernetes DNS]
+    Pod2 -->|HTTP| DNS
+    DNS -->|backend:8000| CIP[ClusterIP Service: backend]
+    CIP --> Pod3[Backend Pod]
+    CIP --> Pod4[Backend Pod]
+    Pod3 -->|SSL| Neon[Neon PostgreSQL]
+    Pod4 -->|SSL| Neon
+    Pod3 -->|envFrom| Secret[app-secrets]
+    Pod4 -->|envFrom| Secret
+```
+
+---
+
+## Helm Chart Structure
+
+```
+helm-charts/
+├── todo-frontend/
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       ├── serviceaccount.yaml
+│       ├── ingress.yaml (disabled by default)
+│       └── _helpers.tpl
+└── todo-backend/
+    ├── Chart.yaml
+    ├── values.yaml
+    └── templates/
+        ├── deployment.yaml
+        ├── service.yaml
+        ├── serviceaccount.yaml
+        ├── ingress.yaml (disabled by default)
+        └── _helpers.tpl
+```
+
+---
+
+## Resource Status Commands
+
+```bash
+# View all resources
+kubectl get all
+
+# View specific resource types
+kubectl get deployments,services,pods
+
+# View resources with labels
+kubectl get all -l app.kubernetes.io/part-of=todo-app
+
+# Describe a resource
+kubectl describe deployment frontend
+kubectl describe service backend
+kubectl describe pod frontend-<hash>
+
+# View resource YAML
+kubectl get deployment frontend -o yaml
+kubectl get service backend -o yaml
+```
+
+---
+
+## Troubleshooting Commands
+
+```bash
+# Pod issues
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+kubectl logs <pod-name> --previous  # Previous container instance
+
+# Service issues
+kubectl describe service <service-name>
+kubectl get endpoints <service-name>
+
+# Secret issues
+kubectl get secret app-secrets -o yaml
+kubectl get secret app-secrets -o jsonpath='{.data.DATABASE_URL}' | base64 -d
+
+# General cluster issues
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl top nodes  # Resource usage
+kubectl top pods   # Resource usage
+```
+
+---
+
+## Resource Deletion
+
+```bash
+# Delete all resources created by Helm
+helm uninstall frontend
+helm uninstall backend
+
+# Delete secrets
+kubectl delete secret app-secrets
+kubectl delete configmap backend-config
+
+# Delete specific resources
+kubectl delete deployment frontend
+kubectl delete service backend
+kubectl delete pod frontend-<hash>
+```
+
+---
+
+## Resource Quotas (Optional)
+
+For resource management, optionally apply quotas:
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: todo-app-quota
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    persistentvolumeclaims: "0"
+```
+
+---
+
+## Network Policies (Optional)
+
+For network security, optionally apply policies:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: todo-app-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: todo-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: todo-app
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: todo-app
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+```
+
+---
+
+## Summary
+
+This reference provides complete specifications for all Kubernetes resources used in the Minikube deployment. The resources are created and managed via Helm charts, but the YAML specifications can be used for:
+
+1. Understanding the complete resource structure
+2. Manual deployment (without Helm)
+3. Troubleshooting and debugging
+4. Custom resource creation
+5. Production migration planning
