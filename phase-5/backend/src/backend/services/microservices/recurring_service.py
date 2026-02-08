@@ -1,0 +1,304 @@
+"""Recurring Service - Handles task completion events and generates next recurring tasks.
+
+This microservice subscribes to task-completed events and automatically
+creates the next occurrence when a recurring task is completed.
+"""
+
+import logging
+import os
+from datetime import datetime, timedelta, timezone
+from typing import Any
+from uuid import UUID
+
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.database import async_session_factory
+from backend.models.task import Task
+from backend.utils.idempotency import check_and_mark_processed
+from backend.utils.event_publisher import publish_task_created
+
+logger = logging.getLogger(__name__)
+
+# Service configuration
+SERVICE_NAME = "recurring-service"
+SERVICE_PORT = int(os.getenv("PORT", "8001"))
+
+# Create FastAPI app
+app = FastAPI(
+    title="Recurring Service",
+    description="Generates next occurrence of recurring tasks upon completion",
+    version="1.0.0",
+)
+
+# Create Dapr app
+
+
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": SERVICE_NAME,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+async def calculate_next_due_date(
+    current_due_date: datetime | None,
+    recurring_rule: str | None,
+    recurring_end_date: datetime | None = None,
+) -> datetime | None:
+    """Calculate the next due date based on the recurrence rule.
+
+    Args:
+        current_due_date: Current task due date (or created_at if no due_date)
+        recurring_rule: Recurrence pattern (daily, weekly, monthly)
+        recurring_end_date: Optional end date for recurrence
+
+    Returns:
+        Next due date as datetime, or None if recurrence should stop
+    """
+    if not recurring_rule:
+        return None
+
+    # Use current_due_date or current time as base
+    base_date = current_due_date or datetime.now(timezone.utc)
+
+    if recurring_rule == "daily":
+        next_date = base_date + timedelta(days=1)
+    elif recurring_rule == "weekly":
+        next_date = base_date + timedelta(weeks=1)
+    elif recurring_rule == "monthly":
+        # Add one month - handle year rollover
+        if base_date.month == 12:
+            next_date = base_date.replace(year=base_date.year + 1, month=1)
+        else:
+            next_date = base_date.replace(month=base_date.month + 1)
+    else:
+        logger.warning(f"Unknown recurring rule: {recurring_rule}")
+        return None
+
+    # Check if we've exceeded the end date
+    if recurring_end_date and next_date > recurring_end_date:
+        return None
+
+    return next_date
+
+
+async def create_next_recurring_task(
+    session: AsyncSession,
+    original_task_id: UUID,
+    user_id: str,
+    title: str,
+    description: str | None,
+    priority: str,
+    due_date: datetime | None,
+    reminder_at: datetime | None,
+    recurring_rule: str,
+    recurring_end_date: datetime | None,
+    tags: list[str],
+) -> Task | None:
+    """Create the next occurrence of a recurring task.
+
+    Args:
+        session: Database session
+        original_task_id: ID of the completed task
+        user_id: User ID
+        title: Task title
+        description: Optional description
+        priority: Task priority
+        due_date: Current task due date
+        reminder_at: Optional reminder time
+        recurring_rule: Recurrence pattern
+        recurring_end_date: Optional recurrence end date
+        tags: Task tags
+
+    Returns:
+        Created Task or None if recurrence should stop
+    """
+    # Helper to strip timezone from datetime if present
+    def make_naive(dt: datetime | None) -> datetime | None:
+        return dt.replace(tzinfo=None) if dt and dt.tzinfo else dt
+
+    # Ensure all datetimes are naive (database stores naive UTC)
+    due_date = make_naive(due_date)
+    reminder_at = make_naive(reminder_at)
+    recurring_end_date = make_naive(recurring_end_date)
+
+    next_due_date = await calculate_next_due_date(
+        due_date, recurring_rule, recurring_end_date
+    )
+
+    if not next_due_date:
+        logger.info(
+            f"Recurrence ended for task {original_task_id} "
+            f"(end_date: {recurring_end_date})"
+        )
+        return None
+
+    # Calculate next reminder_at if reminder was set
+    next_reminder_at = None
+    if reminder_at and due_date:
+        # Calculate offset between due_date and reminder_at
+        reminder_offset = due_date - reminder_at
+        next_reminder_at = next_due_date - reminder_offset
+
+    # Create the next task
+    next_task = Task(
+        user_id=user_id,
+        title=title,
+        description=description,
+        priority=priority,
+        due_date=next_due_date.date() if next_due_date else None,
+        reminder_at=next_reminder_at,
+        recurring_rule=recurring_rule,
+        recurring_end_date=recurring_end_date,
+        parent_task_id=original_task_id,
+        tags=tags,
+        completed=False,
+    )
+
+    session.add(next_task)
+    await session.commit()
+    await session.refresh(next_task)
+
+    logger.info(
+        f"Created next recurring task {next_task.id} "
+        f"for user {user_id}, due: {next_due_date}"
+    )
+
+    return next_task
+
+
+@app.post("/events/task-completed")
+async def handle_task_completed(event_data: dict[str, Any]):
+    """Handle task-completed event - create next recurring task if applicable.
+
+    Args:
+        event_data: Event payload from Dapr
+    """
+    # Dapr wraps our payload in the 'data' field (CloudEvents format)
+    cloud_data = event_data.get("data", {})
+    if not cloud_data:
+        # If not wrapped, use event_data directly (for backward compatibility)
+        cloud_data = event_data
+    
+    event_id = cloud_data.get("event_id")
+    user_id = cloud_data.get("user_id")
+    data = cloud_data.get("data", {})
+
+    task_id_str = data.get("task_id")
+    recurring_rule = data.get("recurring_rule")
+    recurring_end_date_str = data.get("recurring_end_date")
+
+    # Idempotency check - skip if already processed
+    if await check_and_mark_processed(event_id, SERVICE_NAME):
+        logger.info(
+            f"Event {event_id} already processed by {SERVICE_NAME}, skipping"
+        )
+        return {"status": "skipped", "reason": "already_processed"}
+
+    # Only process if this is a recurring task
+    if not recurring_rule:
+        logger.debug(f"Task {task_id_str} is not recurring, skipping")
+        return {"status": "skipped", "reason": "not_recurring"}
+
+    try:
+        task_id = UUID(task_id_str)
+    except (ValueError, TypeError):
+        logger.error(f"Invalid task_id format: {task_id_str}")
+        return {"status": "error", "reason": "invalid_task_id"}
+
+    # Parse end date if provided
+    end_date = None
+    if recurring_end_date_str:
+        try:
+            end_date = datetime.fromisoformat(
+                recurring_end_date_str.replace("Z", "+00:00")
+            )
+        except ValueError:
+            logger.warning(f"Invalid recurring_end_date: {recurring_end_date_str}")
+
+    async with async_session_factory() as session:
+        try:
+            # Get the original task details
+            from sqlalchemy import select
+
+            result = await session.execute(
+                select(Task).where(Task.id == task_id)
+            )
+            original_task = result.scalar_one_or_none()
+
+            if not original_task:
+                logger.warning(f"Task {task_id} not found")
+                return {"status": "error", "reason": "task_not_found"}
+
+            # Create the next recurring task
+            next_task = await create_next_recurring_task(
+                session=session,
+                original_task_id=original_task.id,
+                user_id=user_id,
+                title=original_task.title,
+                description=original_task.description,
+                priority=original_task.priority.value,
+                due_date=datetime.combine(
+                    original_task.due_date, datetime.min.time()
+                ) if original_task.due_date else None,
+                reminder_at=original_task.reminder_at,
+                recurring_rule=original_task.recurring_rule,
+                recurring_end_date=original_task.recurring_end_date,
+                tags=original_task.tags or [],
+            )
+
+            if next_task:
+                # Publish task-created event for the new task
+                await publish_task_created(
+                    user_id=user_id,
+                    task_id=str(next_task.id),
+                    title=next_task.title,
+                    description=next_task.description,
+                    priority=next_task.priority.value,
+                    due_date=next_task.due_date.isoformat() if next_task.due_date else None,
+                    reminder_at=next_task.reminder_at.isoformat() if next_task.reminder_at else None,
+                    recurring_rule=next_task.recurring_rule,
+                    recurring_end_date=next_task.recurring_end_date.isoformat()
+                    if next_task.recurring_end_date else None,
+                    tags=next_task.tags or [],
+                )
+
+                return {
+                    "status": "processed",
+                    "next_task_id": str(next_task.id),
+                    "next_due_date": next_task.due_date.isoformat()
+                    if next_task.due_date else None,
+                }
+            else:
+                return {"status": "processed", "reason": "recurrence_ended"}
+
+        except Exception as e:
+            logger.exception(f"Error processing recurring task {task_id}: {e}")
+            return {"status": "error", "reason": str(e)}
+
+
+@app.on_event("startup")
+async def startup():
+    """Log service startup."""
+    logger.info(f"{SERVICE_NAME} starting up on port {SERVICE_PORT}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Log service shutdown."""
+    logger.info(f"{SERVICE_NAME} shutting down")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "recurring_service:app",
+        host="0.0.0.0",
+        port=SERVICE_PORT,
+        reload=False,
+    )

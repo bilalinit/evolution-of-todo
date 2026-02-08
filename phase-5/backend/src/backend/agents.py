@@ -16,7 +16,7 @@ client = AsyncOpenAI(
 
 # Create model instance
 model = OpenAIChatCompletionsModel(
-    model="GLM-4.7",
+    model="GLM-4.7-Flash",
     openai_client=client
 )
 

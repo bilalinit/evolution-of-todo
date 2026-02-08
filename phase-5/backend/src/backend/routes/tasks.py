@@ -17,6 +17,12 @@ from backend.models.task import (
 from backend.models.notification import Notification
 from backend.models.audit_log import EventType
 from backend.services.audit_service import AuditService
+from backend.utils.event_publisher import (
+    publish_task_created,
+    publish_task_updated,
+    publish_task_completed,
+    publish_task_deleted,
+)
 
 router = APIRouter()
 
@@ -163,14 +169,19 @@ async def create_task(
     await session.commit()
     await session.refresh(task)
 
-    # Log to audit
-    audit_service = AuditService(session)
-    await audit_service.log_event(
-        event_type=EventType.TASK_CREATED,
-        entity_type="task",
-        entity_id=task.id,
+    # Publish event for audit logging and WebSocket broadcast
+    await publish_task_created(
         user_id=user_id,
-        data={"task": task.to_dict()}
+        task_id=str(task.id),
+        title=task.title,
+        description=task.description,
+        priority=task.priority.value,
+        due_date=task.due_date.isoformat() if task.due_date else None,
+        reminder_at=task.reminder_at.isoformat() if task.reminder_at else None,
+        recurring_rule=task.recurring_rule,
+        recurring_end_date=task.recurring_end_date.isoformat()
+        if task.recurring_end_date else None,
+        tags=task.tags or [],
     )
 
     return TaskDetailResponse.from_task(task)
@@ -260,19 +271,25 @@ async def update_task(
     await session.commit()
     await session.refresh(task)
 
-    # Log to audit
-    audit_service = AuditService(session)
-    await audit_service.log_event(
-        event_type=EventType.TASK_UPDATED,
-        entity_type="task",
-        entity_id=task.id,
+    # Publish event for audit logging and WebSocket broadcast
+    await publish_task_updated(
         user_id=user_id,
-        data={
-            "task_id": str(task.id),
-            "before": before_state,
-            "after": task.to_dict()
-        }
+        task_id=str(task.id),
+        before=before_state,
+        after=task.to_dict(),
     )
+    
+    # If task was just completed, also publish task-completed event for recurring task generation
+    completed_before = before_state.get("completed", False)
+    if not completed_before and task.completed:
+        await publish_task_completed(
+            user_id=user_id,
+            task_id=str(task.id),
+            title=task.title,
+            recurring_rule=task.recurring_rule,
+            recurring_end_date=task.recurring_end_date.isoformat()
+            if task.recurring_end_date else None,
+        )
 
     return TaskDetailResponse.from_task(task)
 
@@ -318,22 +335,20 @@ async def toggle_complete(
     task.updated_at = datetime.utcnow()
 
     # If completing a recurring task, create next instance
-    if is_completing and task.recurring_rule:
-        from backend.services.task_service import TaskService
-        task_service = TaskService(session)
-        await task_service.create_next_recurring_task(task)
+    # Note: This is now handled by recurring-service via event
+    # We no longer create next instance directly here
 
     await session.commit()
     await session.refresh(task)
 
-    # Log to audit
-    audit_service = AuditService(session)
-    await audit_service.log_event(
-        event_type=EventType.TASK_COMPLETED,
-        entity_type="task",
-        entity_id=task.id,
+    # Publish event for audit logging, WebSocket broadcast, and recurring task generation
+    await publish_task_completed(
         user_id=user_id,
-        data={"task_id": str(task.id), "task_snapshot": task.to_dict()}
+        task_id=str(task.id),
+        title=task.title,
+        recurring_rule=task.recurring_rule,
+        recurring_end_date=task.recurring_end_date.isoformat()
+        if task.recurring_end_date else None,
     )
 
     return TaskDetailResponse.from_task(task)
@@ -373,14 +388,11 @@ async def delete_task(
     # Store task snapshot for audit before deletion
     task_snapshot = task.to_dict()
 
-    # Log to audit before deletion
-    audit_service = AuditService(session)
-    await audit_service.log_event(
-        event_type=EventType.TASK_DELETED,
-        entity_type="task",
-        entity_id=task.id,
+    # Publish event before deletion
+    await publish_task_deleted(
         user_id=user_id,
-        data={"task_id": str(task.id), "deleted_task": task_snapshot}
+        task_id=str(task.id),
+        title=task.title,
     )
 
     # Delete related notifications first (foreign key constraint)

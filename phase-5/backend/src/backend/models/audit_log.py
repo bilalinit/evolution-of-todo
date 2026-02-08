@@ -25,6 +25,8 @@ class EventType(str, Enum):
 class AuditLog(SQLModel, table=True):
     """Audit log entity - tracks all operations on entities."""
 
+    __tablename__ = "auditlog"
+
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     event_type: EventType = Field(sa_column_kwargs={"nullable": False})
     entity_type: str = Field(description="Type of entity (e.g., 'task')")

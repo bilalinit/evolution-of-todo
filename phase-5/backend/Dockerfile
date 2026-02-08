@@ -35,8 +35,15 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 # Add .venv/bin to PATH
 ENV PATH="/app/.venv/bin:$PATH"
+# Default port (can be overridden)
 EXPOSE 8000
-# Health checks
+# Health checks (port is variable)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+# Default entrypoint: backend-api
+# Override with CMD in Helm charts for other services:
+# - recurring-service: uvicorn backend.services.microservices.recurring_service:app --port 8001
+# - notification-service: uvicorn backend.services.microservices.notification_service:app --port 8002
+# - audit-service: uvicorn backend.services.microservices.audit_service:app --port 8003
+# - websocket-service: uvicorn backend.services.microservices.websocket_service:app --port 8004
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

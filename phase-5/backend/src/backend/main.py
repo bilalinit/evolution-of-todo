@@ -6,6 +6,10 @@ Configures CORS, includes routers, and sets up startup/shutdown events.
 from dotenv import load_dotenv
 load_dotenv()
 
+# Configure logging to see INFO level messages
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 from fastapi import FastAPI, Depends, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -27,12 +31,13 @@ from datetime import datetime, timezone
 from backend.models.chatkit import SessionMetadata, SessionCreateResponse
 from backend.chatkit_store import PostgresChatKitStore
 from backend.chatkit_server import TodoChatKitServer
-from backend.services.reminder_service import ReminderService
-from backend.services.notification_service import NotificationService
+# ReminderService removed - reminders now handled by notification-service microservice via Dapr cron binding
+# from backend.services.reminder_service import ReminderService
+# from backend.services.notification_service import NotificationService
 from backend.services.audit_service import AuditService
 
 # Global services
-reminder_service = None
+# reminder_service = None  # No longer needed - handled by notification-service
 
 # Initialize OpenAI client for ChatKit sessions
 openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -48,8 +53,6 @@ async def lifespan(app: FastAPI):
     """
     Lifespan context manager for startup and shutdown events.
     """
-    global reminder_service
-
     # Startup
     await init_db()
     print("✅ Database initialized")
@@ -62,23 +65,12 @@ async def lifespan(app: FastAPI):
     chatkit_server = TodoChatKitServer(chatkit_store)  # Uses Xiaomi client from agents.py
     print("✅ ChatKit store and server initialized")
 
-    # Initialize Phase 5 services (reminder scheduler)
-    # Services now use session_factory pattern instead of session injection
-    audit_service = AuditService(async_session_factory)
-    notification_service = NotificationService(async_session_factory, audit_service)
-    reminder_service = ReminderService(async_session_factory, notification_service)
-
-    # Start the reminder scheduler
-    await reminder_service.start()
-    print("✅ Reminder scheduler started")
+    # Note: Reminders now handled by notification-service microservice via Dapr cron binding
+    print("✅ Backend ready (reminders handled by notification-service)")
 
     yield
 
     # Shutdown
-    if reminder_service:
-        await reminder_service.stop()
-        print("✅ Reminder scheduler stopped")
-
     await close_db()
     print("✅ Database connections closed")
 
@@ -220,7 +212,7 @@ async def chat_endpoint(
         result = await Runner.run(
             orchestrator,
             enhanced_input,
-            run_config=confi,
+            run_config=config,
             max_turns=20
             
         )

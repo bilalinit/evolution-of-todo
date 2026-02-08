@@ -15,9 +15,12 @@ from pydantic import BaseModel
 class Notification(SQLModel, table=True):
     """Notification entity - in-app notifications for users."""
 
+    __tablename__ = "notification"
+
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: str = Field(index=True, description="Recipient user ID")
     message: str = Field(description="Notification message text")
+    notification_type: str = Field(default="reminder", description="Type of notification (reminder, system, etc.)")
     read: bool = Field(default=False, index=True, description="Read status")
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True, description="Creation timestamp")
     task_id: Optional[UUID] = Field(default=None, foreign_key="task.id", index=True, description="Related task (optional)")

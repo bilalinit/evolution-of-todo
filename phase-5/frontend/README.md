@@ -1,503 +1,526 @@
-# ChatKit + Agents + MCP Frontend - Phase 3 Complete
+# Phase 5: Frontend with Real-Time Microservices Updates
 
-Complete ChatKit integration with OpenAI ChatKit, OpenAI Agents SDK, and MCP Protocol. A modern, TypeScript-based Next.js 16+ frontend application with Better Auth authentication and AI-powered chatbot integration. Features both traditional todo management and conversational task management via dual-agent AI system with full ChatKit UI.
+Modern Next.js 16+ frontend with real-time WebSocket/SSE updates, connecting to event-driven microservices backend with Dapr. Features live task synchronization across devices, advanced task features (recurring, reminders, tags), and AI-powered chatbot integration.
+
+---
 
 ## 🛠️ Technology Stack
 
+### Core Framework
 - **Next.js 16+** (App Router) - Modern React framework with server components
 - **TypeScript 5.x** - Strict mode for type safety
+- **React 19** - Latest React with improved Server Components
 - **Tailwind CSS 4** - Utility-first styling
-- **Better Auth** - Complete authentication solution
-- **React Query** - Server state management for chat and todos
+
+### Real-Time Technologies 🆕
+- **WebSocket API** - Bidirectional real-time communication
+- **Server-Sent Events (SSE)** - Unidirectional updates for tunnel compatibility
+- **Custom WebSocket Hook** - `useWebSocket` for automatic reconnection
+- **WebSocket Client** - Utility library for connection management
+
+### State & Data
+- **React Query** (TanStack Query) - Server state management
 - **React Hook Form** - Form handling with Zod validation
-- **Framer Motion** - Animation library (used for chat animations)
+- **Framer Motion** - Animation library
+- **Zod** - Schema validation
+
+### Authentication & UI
+- **Better Auth** - Complete authentication solution
 - **Lucide React** - Icon library
 - **Sonner** - Toast notifications
 - **Modern Technical Editorial** - Design system (cream #F9F7F2, orange #FF6B4A)
+
+### AI Integration (from Phase 3)
 - **OpenAI ChatKit** - Complete ChatKit UI integration via CDN
 - **OpenAI Agents SDK** - Dual-agent AI system with Urdu support
-- **MCP Protocol** - Model Context Protocol for tool integration
 - **ChatKit React** - `@openai/chatkit-react` package
+
+---
+
+## 🏗️ Architecture
+
+### Microservices Integration
+
+The frontend connects to 6 backend microservices via Dapr:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Next.js Frontend (Port 3000)                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────────┐ │
+│  │   Tasks UI   │  │  ChatKit UI  │  │   Real-Time Updates Hook         │ │
+│  │              │  │              │  │   (WebSocket + SSE)              │ │
+│  └──────────────┘  └──────────────┘  └──────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+            ┌──────────────┐ ┌─────────────┐ ┌──────────────┐
+            │  HTTP API    │ │  WebSocket  │ │     SSE      │
+            │  (Next.js    │ │  (Native)   │ │  (Fallback)  │
+            │  Routes)     │ │             │ │             │
+            └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+                   │               │               │
+                   ▼               ▼               ▼
+            ┌─────────────────────────────────────────────────┐
+            │              Dapr Sidecar (Port 3500)           │
+            │         Service Invocation + Pub/Sub           │
+            └─────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┬───────────────────┐
+                    ▼               ▼               ▼                   ▼
+            ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────────┐
+            │backend-  │   │recurring │   │notific-  │   │   websocket  │
+            │  api     │   │-service │   │-service │   │   -service   │
+            │  :8000   │   │  :8001   │   │  :8002   │   │    :8004     │
+            └──────────┘   └──────────┘   └──────────┘   └──────────────┘
+```
+
+---
+
+## 📦 Project Structure
+
+```
+phase-5/frontend/
+├── src/
+│   ├── app/                          # App Router routes
+│   │   ├── (auth)/                   # Authentication routes
+│   │   │   ├── login/
+│   │   │   ├── signup/
+│   │   │   └── layout.tsx
+│   │   ├── (dashboard)/              # Protected routes
+│   │   │   ├── tasks/                # Main tasks page with WebSocket 🆕
+│   │   │   ├── profile/
+│   │   │   ├── chatkit/               # ChatKit + Agents page
+│   │   │   └── layout.tsx
+│   │   ├── api/                      # 🆕 API routes (proxy to backend)
+│   │   │   └── [userId]/
+│   │   │       └── tasks/route.ts    # Dapr service invocation
+│   │   ├── layout.tsx                # Root layout
+│   │   ├── page.tsx                  # Landing page
+│   │   └── globals.css
+│   │
+│   ├── components/                   # React components
+│   │   ├── auth/                     # Auth components
+│   │   │   ├── AuthGuard.tsx
+│   │   │   ├── LoginForm.tsx
+│   │   │   └── SignupForm.tsx
+│   │   ├── tasks/                    # 🆕 Enhanced task components
+│   │   │   ├── TaskForm.tsx          # With recurring, reminders, tags
+│   │   │   ├── TaskList.tsx           # With real-time updates
+│   │   │   ├── TaskItem.tsx
+│   │   │   ├── TaskSearch.tsx         # #tag syntax
+│   │   │   ├── TaskFilters.tsx
+│   │   │   ├── TaskSort.tsx
+│   │   │   ├── EmptyState.tsx
+│   │   │   ├── PriorityBadge.tsx
+│   │   │   ├── CategoryBadge.tsx
+│   │   │   └── TagBadge.tsx           # 🆕 Tag display
+│   │   ├── chat/                     # ChatKit components
+│   │   │   ├── ChatKitWidget.tsx
+│   │   │   └── EnhancedChatKitWidget.tsx
+│   │   ├── notifications/            # 🆕 Notification components
+│   │   │   ├── NotificationPanel.tsx
+│   │   │   └── NotificationItem.tsx
+│   │   ├── ui/                       # UI primitives (20+)
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── card.tsx
+│   │   │   └── ...
+│   │   └── layout/                   # Layout components
+│   │       ├── Header.tsx            # With notification bell 🆕
+│   │       └── Footer.tsx
+│   │
+│   ├── hooks/                        # Custom hooks
+│   │   ├── useAuth.ts                # Authentication
+│   │   ├── useTasks.ts              # Task CRUD
+│   │   ├── useProfile.ts            # Profile data
+│   │   ├── useDebounce.ts           # Debounce utility
+│   │   └── useWebSocket.ts          # 🆕 Real-time WebSocket/SSE
+│   │
+│   ├── lib/                          # Utilities & API
+│   │   ├── api/
+│   │   │   ├── client.ts            # API client with error handling
+│   │   │   └── types.ts             # TypeScript types
+│   │   ├── auth/
+│   │   │   ├── auth.ts              # Better Auth client
+│   │   │   └── auth-client.ts        # Auth utilities
+│   │   ├── chatkit/                 # ChatKit utilities
+│   │   │   └── session.ts           # Session management
+│   │   ├── constants.ts             # Design tokens 🆕
+│   │   ├── utils.ts                # General utilities
+│   │   └── websocket.ts             # 🆕 WebSocket client library
+│   │
+│   ├── types/                       # TypeScript definitions
+│   │   ├── task.ts                  # 🆕 Extended with Phase 5 fields
+│   │   ├── notification.ts          # 🆕 Notification types
+│   │   ├── auth.ts
+│   │   ├── api.ts
+│   │   └── user.ts
+│   │
+│   └── providers/                   # React providers
+│       ├── QueryProvider.tsx        # React Query
+│       ├── AuthProvider.tsx         # Auth context
+│       └── AnimationProvider.tsx    # Framer Motion
+│
+├── public/                          # Static assets
+├── tailwind.config.ts               # Tailwind configuration
+├── next.config.ts                   # Next.js config (standalone)
+├── tsconfig.json                    # TypeScript config
+├── package.json                     # Dependencies
+├── .env.local.example               # 🆕 Environment template
+└── Dockerfile                       # Multi-stage build
+```
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+ (LTS recommended)
-- npm, yarn, or pnpm
-- Access to the FastAPI backend (running on port 8000)
-
-### Installation
+### Option 1: Docker Compose (Recommended) 🧪
 
 ```bash
-# Navigate to frontend directory
-cd phase-3/frontend
+cd phase-5
+
+# Start all services with Dapr sidecars
+docker-compose up -d
+
+# Frontend available at:
+# http://localhost:3000
+
+# View logs
+docker-compose logs -f frontend
+```
+
+---
+
+### Option 2: Local Development
+
+```bash
+cd phase-5/frontend
 
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.demo .env.local
+# Create environment file
+cp .env.local.example .env.local
+
+# Edit .env.local:
+# NEXT_PUBLIC_API_URL=http://localhost:8000
+# NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8004
+# NEXT_PUBLIC_DEMO_MODE=false
+# BETTER_AUTH_SECRET=your-secret
+# DATABASE_URL=postgresql://...
+
+# Start development server
+npm run dev
+
+# Access: http://localhost:3000
 ```
 
-### Environment Configuration
+---
 
-Create `.env.local` with the following variables:
+### Option 3: Minikube + Dapr (Production-Like) ☸️
 
 ```bash
-# Backend API URL
+# Start Minikube
+minikube start
+eval $(minikube docker-env)
+
+# Build frontend image
+cd phase-5
+docker build -t todo-frontend:v1 -f frontend/Dockerfile frontend
+
+# Deploy
+cd helm-charts
+helm upgrade --install frontend ./todo-frontend \
+  --set image.repository=todo-frontend --set image.tag=v1
+
+# Start tunnel (NEW terminal)
+minikube tunnel
+
+# Access: http://127.0.0.1:3000
+```
+
+---
+
+## 🔧 Environment Variables
+
+### Required Variables
+
+```bash
+# Backend API (for direct HTTP calls)
 NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# 🆕 WebSocket Service (for real-time updates)
+NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8004
 
 # Demo mode (set to false for production)
 NEXT_PUBLIC_DEMO_MODE=false
 
 # Better Auth Configuration
-BETTER_AUTH_SECRET=your-32-char-secret-key-here
+BETTER_AUTH_SECRET=your-32-char-secret
 BETTER_AUTH_URL=http://localhost:3000
 
-# Database URL (for Better Auth)
-DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
+# Database (for Better Auth)
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/db?sslmode=require
 ```
 
-### Development
+### For Kubernetes/Docker Compose
 
 ```bash
-# Start development server
-npm run dev
+# Backend service name (for internal K8s communication)
+BACKEND_URL=http://backend-api-todo-backend:8000
 
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run type checking
-npm run type-check
-
-# Run linting
-npm run lint
+# WebSocket service URL (for external access)
+NEXT_PUBLIC_WEBSOCKET_URL=ws://127.0.0.1:8004
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+---
 
-## 🏗️ Architecture
+## 🔄 Real-Time Updates 🆕
 
-### Technology Stack
+### WebSocket Integration
 
-- **Framework**: Next.js 16+ with App Router
-- **Language**: TypeScript 5.x (strict mode)
-- **Styling**: Tailwind CSS 4
-- **Authentication**: Better Auth with JWT tokens
-- **State Management**: React Query + React Hook Form
-- **UI Components**: 20+ reusable primitives
-- **Design System**: Modern Technical Editorial (cream #F9F7F2, orange #FF6B4A)
-- **API Layer**: Backend-agnostic client with error handling
+**Location**: `src/hooks/useWebSocket.ts`
 
-### Project Structure
+The frontend uses a custom `useWebSocket` hook for real-time task updates:
 
-```
-phase-3/frontend/
-├── src/
-│   ├── app/                    # App Router routes
-│   │   ├── (auth)/            # Authentication routes
-│   │   │   ├── login/
-│   │   │   ├── signup/
-│   │   │   └── layout.tsx
-│   │   ├── (dashboard)/       # Protected routes
-│   │   │   ├── tasks/
-│   │   │   ├── profile/
-│   │   │   ├── chatkit/       # NEW: ChatKit Integration page
-│   │   │   └── layout.tsx
-│   │   ├── layout.tsx         # Root layout (includes ChatKit CDN)
-│   │   ├── page.tsx           # Landing page
-│   │   └── globals.css
-│   ├── components/            # React components
-│   │   ├── auth/              # Auth components
-│   │   │   ├── AuthGuard.tsx
-│   │   │   ├── LoginForm.tsx
-│   │   │   └── SignupForm.tsx
-│   │   ├── tasks/             # Task components
-│   │   │   ├── TaskForm.tsx
-│   │   │   ├── TaskSearch.tsx
-│   │   │   └── TaskList.tsx
-│   │   ├── chat/              # ChatKit components
-│   │   │   ├── ChatKitWidget.tsx      # NEW: Complete ChatKit integration
-│   │   │   └── EnhancedChatKitWidget.tsx  # Enhanced UI wrapper
-│   │   ├── ui/                # UI primitives
-│   │   │   ├── button.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── card.tsx
-│   │   │   └── ... (20+ components)
-│   │   └── layout/            # Layout components
-│   │       ├── Header.tsx     # Updated with ChatKit link
-│   │       └── Navigation.tsx
-│   ├── lib/                   # Utilities & API
-│   │   ├── api.ts             # API client (updated for ChatKit)
-│   │   ├── auth.ts            # Auth utilities
-│   │   ├── utils.ts           # General utilities
-│   │   ├── date.ts            # Date formatting
-│   │   └── chatkit/           # NEW: ChatKit utilities
-│   │       └── session.ts     # Session management
-│   ├── hooks/                 # Custom hooks
-│   │   ├── useAuth.ts         # Authentication hook
-│   │   ├── useSession.ts      # Session management
-│   │   ├── useTasks.ts        # Task operations
-│   │   ├── useProfile.ts      # Profile operations
-│   │   └── useDebounce.ts     # Debounce utility
-│   ├── types/                 # TypeScript definitions
-│   │   ├── auth.ts
-│   │   ├── task.ts
-│   │   ├── api.ts
-│   │   └── user.ts
-│   └── providers/             # React providers
-│       ├── QueryProvider.tsx  # React Query
-│       ├── AuthProvider.tsx   # Auth context
-│       └── AnimationProvider.tsx  # Framer Motion
-├── public/                    # Static assets
-├── tailwind.config.ts         # Tailwind configuration
-├── next.config.js             # Next.js config
-├── tsconfig.json              # TypeScript config
-├── package.json               # Dependencies (includes @openai/chatkit-react)
-├── package-lock.json          # Dependency lock file
-└── .env.local                 # Environment variables
-```
+```typescript
+import { useTaskRealtimeUpdates } from '@/hooks/useWebSocket'
 
-## 🔐 Authentication
+function TasksPage({ userId }: { userId: string }) {
+  // Real-time updates for tasks
+  useTaskRealtimeUpdates(userId, (event) => {
+    // Handle real-time events
+    switch (event.type) {
+      case 'task-created':
+        // Optimistically add task to list
+        break
+      case 'task-updated':
+        // Update task in list
+        break
+      case 'task-deleted':
+        // Remove task from list
+        break
+    }
+  })
 
-### Better Auth Integration
-
-The frontend uses Better Auth for complete authentication management:
-
-- **User Registration**: Email/password signup with validation
-- **User Login**: Secure authentication with session management
-- **Password Change**: Profile page functionality
-- **Session Management**: 7-day sessions with automatic refresh
-- **Error Handling**: Duplicate email, invalid credentials, weak password validation
-
-### Authentication Flow
-
-1. **Signup/Login**: User authenticates via Better Auth
-2. **JWT Token**: Backend returns JWT token
-3. **Storage**: Token stored in HTTP-only cookies
-4. **API Calls**: Frontend includes token in Authorization header
-5. **Protected Routes**: AuthGuard verifies authentication before allowing access
-
-### Protected Routes
-
-All routes under `(dashboard)` group require authentication:
-
-```tsx
-// app/(dashboard)/layout.tsx
-import { AuthGuard } from '@/components/auth/AuthGuard'
-
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <AuthGuard>{children}</AuthGuard>
+  return <TaskList userId={userId} />
 }
 ```
+
+### Features
+
+- **Automatic Reconnection**: Exponential backoff for connection drops
+- **SSE Fallback**: Automatically switches to SSE if WebSocket unavailable
+- **Heartbeat**: Keeps connection alive with 15s interval
+- **Event Filtering**: Only receives events for current user
+- **Type Safety**: Full TypeScript support for all events
+
+### Event Types
+
+```typescript
+type TaskEvent =
+  | { type: 'task-created'; data: Task }
+  | { type: 'task-updated'; data: Task }
+  | { type: 'task-completed'; data: Task }
+  | { type: 'task-deleted'; data: { task_id: string } }
+  | { type: 'reminder-due'; data: Notification }
+```
+
+### WebSocket Client
+
+**Location**: `src/lib/websocket.ts`
+
+```typescript
+import { WebSocketClient } from '@/lib/websocket'
+
+const ws = new WebSocketClient('ws://localhost:8004/ws', {
+  userId: 'user-123',
+  onMessage: (event) => console.log('Received:', event),
+  onError: (error) => console.error('Error:', error),
+  autoReconnect: true,
+})
+
+ws.connect()
+```
+
+---
+
+## 🎨 Advanced Task Features (Phase 5)
+
+### Recurring Tasks
+
+**UI**: Enhanced `TaskForm` component with recurring options
+
+```typescript
+// Create recurring task
+const recurringTask = {
+  title: "Team Standup",
+  description: "Daily team sync",
+  recurring_rule: "daily",  // daily, weekly, monthly, yearly
+  recurring_end_date: "2026-12-31T23:59:59Z",
+  due_date: "2026-01-15",
+}
+```
+
+**How It Works**:
+1. User creates recurring task via form
+2. Task saved to database with `recurring_rule`
+3. When task completed → event published
+4. Backend `recurring-service` generates next occurrence
+5. Real-time update pushes new task to all connected clients
+
+### Reminders
+
+**UI**: Date/time picker with timezone support
+
+```typescript
+const taskWithReminder = {
+  title: "Doctor Appointment",
+  due_date: "2026-01-20",
+  reminder_at: "2026-01-20T09:00:00+05:00",  // PKT timezone
+}
+```
+
+**Real-Time Notification**:
+1. `notification-service` checks every minute
+2. Creates notification when reminder due
+3. WebSocket broadcasts `reminder-due` event
+4. Frontend shows notification bell + toast
+
+### Tags
+
+**UI**: Tag input with comma-separated values
+
+```typescript
+const taskWithTags = {
+  title: "Project Review",
+  tags: ["urgent", "frontend", "sprint-23"],
+}
+```
+
+**Search**: Use `#tag` syntax in search box
+- `#urgent` → Shows all urgent tasks
+- `#frontend` → Shows all frontend tasks
+
+---
 
 ## 📡 API Integration
 
 ### Backend Connection
 
-The frontend connects to the FastAPI backend running on `http://localhost:8000`:
+The frontend connects via two methods:
 
+**1. HTTP API (Traditional)**
 ```typescript
-// lib/api.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// lib/api/client.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
-export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = getAuthToken() // From cookies
-
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
+export async function createTask(userId: string, task: TaskInput) {
+  const response = await fetch(`${API_BASE}/api/${userId}/tasks`, {
+    method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      ...options.headers,
+      'Authorization': `Bearer ${token}`,
     },
-    credentials: 'include',
+    body: JSON.stringify(task),
   })
+  return response.json()
+}
+```
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
+**2. Dapr Service Invocation (Kubernetes) 🆕**
+```typescript
+// app/api/[userId]/tasks/route.ts
+const DAPR_HOST = process.env.DAPR_HOST || 'localhost'
+const DAPR_HTTP_PORT = process.env.DAPR_HTTP_PORT || '3500'
+const BACKEND_APP = 'backend-api'
+
+export async function GET(
+  request: Request,
+  { params }: { params: { userId: string } }
+) {
+  const daprUrl = `http://${DAPR_HOST}:${DAPR_HTTP_PORT}/v1.0/invoke/${BACKEND_APP}/method/api/${params.userId}/tasks`
+
+  const response = await fetch(daprUrl, {
+    method: 'GET',
+    headers: {
+      'dapr-app-id': BACKEND_APP,
+    },
+  })
 
   return response.json()
 }
 ```
 
-### Available API Endpoints
+### React Query Hooks
 
-**ChatKit Integration:**
-- `POST /api/chatkit` - Main ChatKit endpoint (all operations)
-- `POST /api/chatkit/session` - Create ChatKit session
-- `GET /api/chatkit/health` - ChatKit system health
-
-**Task Management:**
-- `GET /api/{user_id}/tasks` - List tasks with filters
-- `GET /api/{user_id}/tasks/{task_id}` - Get single task
-- `POST /api/{user_id}/tasks` - Create task
-- `PUT /api/{user_id}/tasks/{task_id}` - Update task
-- `PATCH /api/{user_id}/tasks/{task_id}/complete` - Toggle completion
-- `DELETE /api/{user_id}/tasks/{task_id}` - Delete task
-
-**Profile & Stats:**
-- `GET /api/{user_id}/profile` - User info and task statistics
-
-### React Query Integration
-
-All API calls use React Query for caching, optimistic updates, and error handling:
+**Location**: `src/hooks/useTasks.ts`
 
 ```typescript
-// hooks/useTasks.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-
-export function useTasks(userId: string) {
+// Fetch tasks
+export function useTasks(userId: string, filters?: TaskFilters) {
   return useQuery({
-    queryKey: ['tasks', userId],
-    queryFn: () => apiRequest(`/api/${userId}/tasks`),
+    queryKey: ['tasks', userId, filters],
+    queryFn: () => fetchTasks(userId, filters),
     enabled: !!userId,
   })
 }
 
+// Create task (with optimistic update)
 export function useCreateTask(userId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (taskData) =>
-      apiRequest(`/api/${userId}/tasks`, {
-        method: 'POST',
-        body: JSON.stringify(taskData),
-      }),
-    onSuccess: () => {
+    mutationFn: (task: TaskInput) => createTask(userId, task),
+    onMutate: async (newTask) => {
+      // Optimistic update
+      await queryClient.cancelQueries(['tasks', userId])
+      const previous = queryClient.getQueryData(['tasks', userId])
+
+      queryClient.setQueryData(['tasks', userId], (old: Task[]) => [
+        ...old,
+        { ...newTask, id: 'temp', created_at: new Date().toISOString() },
+      ])
+
+      return { previous }
+    },
+    onError: (err, newTask, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['tasks', userId], context.previous)
+    },
+    onSettled: () => {
+      // Refetch from server
       queryClient.invalidateQueries(['tasks', userId])
     },
   })
 }
 ```
 
+---
+
 ## 🤖 ChatKit Integration
 
-### ChatKit Features
+### ChatKit Page
 
-The Phase 3 frontend includes complete OpenAI ChatKit integration with dual-agent AI system support:
+**Location**: `src/app/chatkit/page.tsx`
 
-**ChatKit Page** (`/chatkit`):
-- **OpenAI ChatKit UI**: Official ChatKit component via CDN
-- **Dual-Agent Support**: Orchestrator + UrduSpecialist routing
-- **MCP Tool Integration**: 5 CRUD operations accessible via natural language
-- **Thread Persistence**: Automatic conversation saving to PostgreSQL
-- **Session Management**: Secure JWT-based authentication
-- **Modern UI**: Technical Editorial design with cream/orange palette
-- **Responsive Design**: Mobile-first approach with accessibility
+Complete OpenAI ChatKit integration with:
+- Dual-agent AI system (Orchestrator + UrduSpecialist)
+- MCP tool integration (5 CRUD operations)
+- Thread persistence (PostgreSQL)
+- JWT authentication
+- Modern UI with Technical Editorial design
 
-### ChatKit Components
+### Natural Language Examples
 
-**ChatKitWidget.tsx**:
-- Complete ChatKit integration using `@openai/chatkit-react`
-- Enhanced script loading detection using `customElements.whenDefined()`
-- Custom fetch interceptor for context injection
-- Loading states and error handling UI
-- Theme configuration with accent color `#FF6B4A`
+- "Create a task for tomorrow with high priority"
+- "Show me all my pending tasks"
+- "میرے ٹاسک دکھاؤ" (Urdu: Show my tasks)
+- "Mark task as completed"
+- "Delete the meeting task"
 
-**EnhancedChatKitWidget.tsx**:
-- Wrapper component with expandable UI
-- Feature highlights and quick start prompts
-- Start screen configuration with greeting and prompts
-- Composer placeholder text customization
-
-### ChatKit API Integration
-
-```typescript
-// lib/chatkit/session.ts
-export async function createChatKitSession(userId: string) {
-  const token = getAuthToken()
-
-  const response = await fetch(`${API_BASE}/api/chatkit/session`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      metadata: {
-        userInfo: { id: userId, name: userId }
-      }
-    })
-  })
-
-  return response.json()
-}
-
-export async function refreshChatKitSession(sessionId: string) {
-  // Refresh session logic
-}
-```
-
-```typescript
-// components/chat/ChatKitWidget.tsx
-import { ChatKit, useChatKit } from '@openai/chatkit-react'
-
-export function ChatKitWidget() {
-  const { control } = useChatKit({
-    api: {
-      url: '/api/chatkit',  // Next.js proxy handles auth injection
-      domainKey: 'local-dev',
-    },
-    startScreen: {
-      greeting: 'Hello! I can help you manage your tasks. What would you like to do?',
-      prompts: [
-        { label: 'Create a task', prompt: 'I want to create a new task' },
-        { label: 'List my tasks', prompt: 'Show me my tasks' },
-        { label: 'What can you do?', prompt: 'What capabilities do you have?' },
-      ],
-    },
-    composer: {
-      placeholder: 'Ask me to create, list, or update tasks...',
-    },
-  })
-
-  return <ChatKit control={control} />
-}
-```
-
-### ChatKit Script Loading
-
-**Enhanced Detection**:
-- Uses `customElements.whenDefined()` for reliable detection
-- Multiple fallback methods for script loading
-- Safety timeout with user-friendly error messages
-- Development logging for debugging
-
-**CDN Integration**:
-```tsx
-// app/layout.tsx
-<script
-  src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
-  strategy="afterInteractive"
-  onLoad={() => console.log('ChatKit loaded')}
-/>
-```
-
-### ChatKit Features
-
-**Thread Persistence**:
-- Automatic conversation saving to PostgreSQL
-- User isolation with Row Level Security
-- Thread metadata storage (title, model, context)
-- Cross-device conversation access
-
-**Session Management**:
-- Secure JWT-based authentication
-- Session creation and refresh endpoints
-- HTTP-only cookie storage
-- Automatic token refresh
-
-**MCP Tool Integration**:
-- **create_task**: Create new task via natural language
-- **list_tasks**: Show tasks with filtering
-- **update_task**: Modify existing tasks
-- **delete_task**: Remove tasks
-- **toggle_task**: Mark tasks complete/incomplete
-
-**Dual-Agent System**:
-- **Orchestrator**: Routes requests to appropriate agent
-- **UrduSpecialist**: Handles Urdu language conversations
-- Intelligent handoffs between agents
-- Cultural context awareness
-
-### Example ChatKit Flow
-
-```typescript
-// 1. User visits /chatkit page
-// 2. ChatKitWidget loads OpenAI ChatKit via CDN
-// 3. Session created via /api/chatkit/session
-// 4. User sends message: "Create a task for tomorrow"
-// 5. ChatKit → Backend → Orchestrator → UrduSpecialist
-// 6. Agent executes MCP create_task tool
-// 7. Task saved to PostgreSQL with user isolation
-// 8. Response streamed back to ChatKit UI
-// 9. Thread automatically persisted
-```
-
-### ChatKit API Endpoints
-
-**Main ChatKit Endpoint** (handles all operations):
-```http
-POST /api/chatkit
-Authorization: Bearer <jwt_token>
-
-# Handles:
-# - threads.create, threads.get, threads.list
-# - messages.create, messages.list
-# - runs.create (with streaming response)
-# - All other ChatKit protocol operations
-```
-
-**Session Management**:
-```http
-POST /api/chatkit/session
-# Creates OpenAI ChatKit session with JWT auth
-
-GET /api/chatkit/health
-# Checks ChatKit system status
-```
-
-### ChatKit Configuration
-
-**Theme & Styling**:
-```typescript
-const { control } = useChatKit({
-  api: {
-    url: '/api/chatkit',
-    domainKey: 'local-dev',
-  },
-  // Custom theme with accent color
-  theme: {
-    colors: {
-      accent: '#FF6B4A',  // Orange accent
-      background: '#F9F7F2', // Cream background
-    }
-  },
-  // Start screen configuration
-  startScreen: {
-    greeting: 'Hello! I can help you manage your tasks.',
-    prompts: [
-      { label: 'Create a task', prompt: 'I want to create a new task' },
-      { label: 'List my tasks', prompt: 'Show me my tasks' },
-      { label: 'Urdu support', prompt: 'میرے ٹاسک دکھاؤ' },
-    ],
-  },
-  // Composer customization
-  composer: {
-    placeholder: 'Ask me to create, list, or update tasks...',
-  },
-})
-```
-
-### ChatKit Error Handling
-
-**Loading Errors**:
-- Script loading timeout detection
-- Network connectivity issues
-- OpenAI API key validation
-- User-friendly error messages with retry options
-
-**Runtime Errors**:
-- Session creation failures
-- MCP tool execution errors
-- Agent routing failures
-- Database connection issues
-
-**Recovery Mechanisms**:
-- Automatic session refresh
-- Retry logic for failed requests
-- Graceful degradation with fallback UI
-- Detailed error logging in development
+---
 
 ## 🎨 Design System
 
@@ -505,6 +528,7 @@ const { control } = useChatKit({
 
 **Color Palette:**
 - **Background**: Cream `#F9F7F2`
+- **Surface**: Darker cream `#F0EBE0`
 - **Accent**: Orange `#FF6B4A`
 - **Text**: Dark brown `#2A1B12`
 - **Borders**: Subtle `#2A1B12/10`
@@ -514,302 +538,238 @@ const { control } = useChatKit({
 - **Body**: DM Sans (sans-serif)
 - **Labels**: JetBrains Mono (monospace)
 
-**Components:**
-- **Buttons**: Technical with subtle hover effects
-- **Cards**: Clean with minimal borders
-- **Inputs**: Modern with validation states
-- **Badges**: Color-coded by priority/category
+**Animation Tokens:**
+- **Spring 400/10** - Default spring physics
+- **FadeInUp** - Content appearance
+- **LineDraw** - Divider animations
 
-### UI Components
+---
 
-The project includes 20+ reusable components:
+## 🔔 Notifications 🆕
 
-**Authentication:**
-- `LoginForm` - Email/password login
-- `SignupForm` - User registration
-- `AuthGuard` - Route protection
+### Notification Panel
 
-**Task Management:**
-- `TaskForm` - Create/edit tasks
-- `TaskSearch` - Filter and search
-- `TaskList` - Display tasks with stats
-- `CategoryBadge` - Color-coded categories
-- `PriorityBadge` - Priority indicators
+**Location**: `src/components/notifications/NotificationPanel.tsx`
 
-**UI Primitives:**
-- `Button` - Primary/secondary variants
-- `Input` - Text/email/password fields
-- `Card` - Container components
-- `Dialog` - Modal dialogs
-- `Skeleton` - Loading states
-- `Badge` - Status indicators
+Features:
+- Bell icon in header with unread count badge
+- Dropdown panel with recent notifications
+- Real-time updates via WebSocket
+- Mark as read / delete actions
 
-## 🔄 State Management
+**Real-Time Flow**:
+1. `notification-service` creates notification
+2. Publishes `reminder-due` event
+3. `websocket-service` broadcasts to clients
+4. Frontend `useNotificationRealtimeUpdates` hook receives event
+5. Shows toast + updates notification bell
 
-### React Query (Server State)
+---
 
-- **Caching**: Automatic query caching
-- **Invalidation**: Cache invalidation on mutations
-- **Optimistic Updates**: Instant UI updates
-- **Background Refetching**: Stale-while-revalidate
+## 🗄️ Data Models
 
-### React Hook Form (Client State)
+### Task Type (Extended)
 
-- **Form Validation**: Zod schema validation
-- **Error Handling**: Field-level error messages
-- **Performance**: Minimal re-renders
-- **Type Safety**: Full TypeScript support
+**Location**: `src/types/task.ts`
 
-### Auth Context
+```typescript
+interface Task {
+  id: string
+  title: string
+  description?: string
+  completed: boolean
+  priority: 'low' | 'medium' | 'high'
+  category: 'work' | 'personal' | 'shopping' | 'health' | 'other'
+  due_date?: string
+  user_id: string
+  created_at: string
+  updated_at: string
 
-- **Session Management**: Automatic token refresh
-- **User State**: Current user information
-- **Loading States**: Auth loading indicators
-- **Error Handling**: Auth error management
-
-## 🔒 Security Features
-
-### Frontend Security
-
-- **JWT Storage**: HTTP-only cookies (not localStorage)
-- **Input Validation**: Client-side validation before API calls
-- **Error Sanitization**: No sensitive data in error messages
-- **CSRF Protection**: SameSite cookies, secure headers
-- **XSS Prevention**: React's built-in XSS protection
-
-### API Security
-
-- **Authentication**: JWT verification on every request
-- **Authorization**: User ownership enforcement
-- **Input Validation**: Server-side validation
-- **Rate Limiting**: Ready for implementation
-- **CORS**: Configured for trusted origins
-
-## 🧪 Testing & Quality
-
-### Development Workflow
-
-```bash
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-
-# Format code
-npm run format
-
-# Build verification
-npm run build
+  // Phase 5: Advanced Features
+  recurring_rule?: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  recurring_end_date?: string
+  parent_task_id?: string
+  reminder_at?: string
+  reminder_sent?: boolean
+  tags?: string[]
+}
 ```
 
-### Code Quality
+### Notification Type 🆕
 
-- **TypeScript**: Strict mode with no compilation errors
-- **ESLint**: Code quality and best practices
-- **Prettier**: Consistent code formatting
-- **Tailwind**: Utility-first CSS with proper class sorting
+```typescript
+interface Notification {
+  id: string
+  user_id: string
+  message: string
+  notification_type: 'reminder' | 'task_created' | 'task_completed'
+  read: boolean
+  created_at: string
+  task_id?: string
+}
+```
 
-## 🚀 Deployment
+---
 
-### Production Build
+## 🧪 Testing
+
+### Type Checking
 
 ```bash
-# Build the application
-npm run build
+npm run type-check
+```
 
-# Start production server
+### Linting
+
+```bash
+npm run lint
+```
+
+### Build Verification
+
+```bash
+npm run build
 npm start
 ```
 
-### Environment Variables for Production
-
-```bash
-# Required
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-NEXT_PUBLIC_DEMO_MODE=false
-BETTER_AUTH_SECRET=your-production-secret
-DATABASE_URL=your-production-db-url
-
-# Optional
-NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
-NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id
-```
-
-### Deployment Platforms
-
-**Vercel (Recommended):**
-```bash
-vercel --prod
-```
-
-**Docker:**
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-## 📊 Performance Optimization
-
-### Next.js Optimizations
-
-- **Image Optimization**: Automatic image optimization
-- **Font Optimization**: `next/font` for automatic font loading
-- **Code Splitting**: Automatic route-based splitting
-- **Lazy Loading**: Component and image lazy loading
-- **Caching**: ISR and SSG where appropriate
-
-### React Query Optimizations
-
-- **Stale Time**: Configured for optimal cache usage
-- **Refetching**: Background refetching on window focus
-- **Retry Logic**: Exponential backoff for failed requests
-- **Garbage Collection**: Automatic cache cleanup
+---
 
 ## 🔧 Troubleshooting
 
-### Common Issues
+### WebSocket Connection Issues
 
-**1. API Connection Failed**
+```bash
+# Check WebSocket service is running
+curl http://localhost:8004/health
+
+# Check WebSocket URL in .env.local
+echo $NEXT_PUBLIC_WEBSOCKET_URL
+
+# Test WebSocket connection
+wscat -c ws://localhost:8004/ws?user_id=test-user
+```
+
+### Real-Time Updates Not Working
+
+```bash
+# Check browser console for WebSocket errors
+# Verify NEXT_PUBLIC_WEBSOCKET_URL is correct
+# Check if WebSocket service is healthy
+
+# For Docker Compose:
+docker-compose logs websocket-service
+
+# For Minikube:
+kubectl logs -l app=websocket-service --tail=50
+```
+
+### API Connection Issues
+
 ```bash
 # Check backend is running
 curl http://localhost:8000/health
 
-# Verify NEXT_PUBLIC_API_URL in .env.local
+# Verify NEXT_PUBLIC_API_URL
 echo $NEXT_PUBLIC_API_URL
+
+# Check network tab in browser dev tools
 ```
-
-**2. Authentication Errors**
-- Ensure BETTER_AUTH_SECRET is set (32+ characters)
-- Verify DATABASE_URL connection
-- Check cookies are enabled in browser
-
-**3. Build Errors**
-```bash
-# Clear cache and reinstall
-rm -rf .next node_modules
-npm install
-npm run build
-```
-
-**4. Tailwind Not Working**
-```bash
-# Restart dev server
-npm run dev -- --force
-```
-
-## 📚 Additional Resources
-
-- **Next.js Docs**: https://nextjs.org/docs
-- **Better Auth Docs**: https://better-auth.com
-- **React Query Docs**: https://tanstack.com/query/latest
-- **Tailwind Docs**: https://tailwindcss.com/docs
-- **TypeScript Docs**: https://www.typescriptlang.org/docs
-
-## 🤝 Contributing
-
-This project follows Spec-Driven Development principles:
-
-1. **Specification**: Features defined in `specs/003-nextjs-frontend/spec.md`
-2. **Planning**: Architecture in `specs/003-nextjs-frontend/plan.md`
-3. **Tasks**: Implementation steps in `specs/003-nextjs-frontend/tasks.md`
-4. **Documentation**: PHRs in `history/prompts/`
-
-### Development Workflow
-
-```bash
-# 1. Check current tasks
-cat specs/003-nextjs-frontend/tasks.md
-
-# 2. Work on specific task
-# 3. Update task status to [X]
-# 4. Create PHR for the work
-# 5. Submit PR with documentation
-```
-
-## 🎯 Current Status
-
-**Branch**: `008-chatkit-integration` ✅ Complete
-**Tasks**: 164/164 (100% complete)
-**Status**: ✅ **Phase 3 Complete - ChatKit + Agents + MCP Ready for Production**
-
-### Completed Features
-
-- ✅ **ChatKit Integration**: Complete OpenAI ChatKit UI via CDN
-- ✅ **OpenAI ChatKit React**: `@openai/chatkit-react` package integration
-- ✅ **Dual-Agent System**: Orchestrator + UrduSpecialist support
-- ✅ **MCP Tool Integration**: 5 CRUD operations via natural language
-- ✅ **Thread Persistence**: Automatic PostgreSQL storage
-- ✅ **Session Management**: JWT-based authentication with secure cookies
-- ✅ **Modern UI**: Technical Editorial design (cream #F9F7F2, orange #FF6B4A)
-- ✅ **Enhanced Script Loading**: Multiple detection methods with fallbacks
-- ✅ **Error Handling**: Comprehensive error states and recovery
-- ✅ **Responsive Design**: Mobile-first approach with accessibility
-- ✅ **20+ UI Components**: Reusable primitives
-- ✅ **TypeScript Strict Mode**: Zero compilation errors
-- ✅ **React Query Integration**: Server state management
-- ✅ **Better Auth Integration**: Complete authentication system
-- ✅ **API Proxy Route**: Secure backend communication
-
-### ChatKit Features
-
-**Components:**
-- ✅ `ChatKitWidget.tsx` - Complete ChatKit integration
-- ✅ `EnhancedChatKitWidget.tsx` - Enhanced UI wrapper
-- ✅ `app/chatkit/page.tsx` - Dedicated ChatKit page
-- ✅ `lib/chatkit/session.ts` - Session utilities
-- ✅ `app/api/chatkit/route.ts` - Proxy endpoint
-
-**Configuration:**
-- ✅ ChatKit CDN script in HTML body (afterInteractive)
-- ✅ Enhanced detection using `customElements.whenDefined()`
-- ✅ Theme configuration with accent color `#FF6B4A`
-- ✅ Start screen with greeting and prompts
-- ✅ Composer placeholder customization
-- ✅ Loading states and error handling UI
-
-### Quick Start
-
-```bash
-# Install dependencies
-cd phase-3/frontend
-npm install
-
-# Setup environment
-cp .env.demo .env.local
-# Set NEXT_PUBLIC_DEMO_MODE=false
-
-# Start development server
-npm run dev
-
-# Visit: http://localhost:3000/chatkit
-```
-
-### Available Features
-
-**ChatKit Interface:**
-- **Natural Language Tasks**: "Create a task for tomorrow", "Show my tasks", "میرے ٹاسک دکھاؤ"
-- **Thread Persistence**: All conversations saved to PostgreSQL
-- **Dual-Agent Routing**: Intelligent handoffs between agents
-- **MCP Tools**: 5 CRUD operations accessible via chat
-- **Session Management**: Secure JWT-based authentication
-- **Responsive UI**: Mobile-first design with accessibility
-
-**Traditional Todo Management:**
-- **Task CRUD**: Create, read, update, delete tasks
-- **Filtering & Search**: Advanced task filtering
-- **Profile Management**: User settings and password change
-- **Authentication**: Better Auth with JWT tokens
 
 ---
 
-**Project**: ChatKit + Agents + MCP Integration - Phase 3
-**Branch**: `008-chatkit-integration`
-**Framework**: Next.js 16+ with OpenAI ChatKit
-**Status**: ✅ Complete - Ready for Production
+## 📚 Documentation
+
+### Phase 5 Documentation
+
+- **[../README.md](../README.md)** - Phase 5 overview
+- **[../DAPR_README.md](../DAPR_README.md)** - Dapr setup guide
+- **[../../specs/011-microservices-dapr/](../../specs/011-microservices-dapr/)** - Microservices specification
+
+### API Documentation
+
+Once running, access backend API docs:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+---
+
+## 🚀 Deployment
+
+### Docker Build
+
+```bash
+# Build production image
+docker build -t todo-frontend:v1 -f frontend/Dockerfile frontend
+
+# Run container
+docker run -p 3000:3000 todo-frontend:v1
+```
+
+### Kubernetes with Helm
+
+```bash
+# Build image in Minikube
+eval $(minikube docker-env)
+docker build -t todo-frontend:v1 -f frontend/Dockerfile frontend
+
+# Deploy
+helm upgrade --install frontend helm-charts/todo-frontend \
+  --set image.repository=todo-frontend \
+  --set image.tag=v1 \
+  --set websocketUrl=ws://127.0.0.1:8004
+```
+
+---
+
+## 🎯 Current Status
+
+**Branch**: `011-microservices-dapr` ✅ Complete
+**Features**: Real-time updates + Advanced tasks + ChatKit + Agents
+**Overall**: 684+ tasks across all 5 phases (100% complete)
+
+### Phase 5 Completion Summary
+
+**Advanced Features (Branch 010):**
+- ✅ Recurring tasks with automatic generation
+- ✅ Time-based reminders with timezone support
+- ✅ Flexible tagging system
+- ✅ Extended task model
+
+**Real-Time Updates (Branch 011):**
+- ✅ WebSocket integration for live updates
+- ✅ SSE fallback for tunnel compatibility
+- ✅ Automatic reconnection with exponential backoff
+- ✅ Real-time task synchronization across devices
+- ✅ Live notification delivery
+- ✅ Optimistic UI updates
+
+**Frontend Integration:**
+- ✅ Dapr service invocation via API routes
+- ✅ Enhanced TaskForm with Phase 5 fields
+- ✅ Real-time notification panel
+- ✅ #tag search syntax
+- ✅ Modern UI with Technical Editorial design
+
+---
+
+**Project**: Phase 5 - Frontend with Real-Time Microservices Updates
+**Branch**: `011-microservices-dapr`
+**Framework**: Next.js 16+ + React 19 + TypeScript 5 + WebSocket + SSE + Tailwind CSS 4
+**Status**: ✅ **Complete - Production-Ready**
+
+### Complete Feature Set
+- ✅ Real-time WebSocket + SSE updates
+- ✅ Cross-device task synchronization
+- ✅ Advanced task features (recurring, reminders, tags)
+- ✅ Live notification delivery
+- ✅ ChatKit + Agents SDK integration
+- ✅ Dual-agent AI system (Orchestrator + UrduSpecialist)
+- ✅ MCP tool integration (5 CRUD operations)
+- ✅ Modern Technical Editorial design
+- ✅ Better Auth with JWT
+- ✅ React Query for state management
+- ✅ Dapr service invocation
+- ✅ Optimistic updates
+- ✅ TypeScript strict mode
+
+This frontend demonstrates a modern, real-time user interface connecting to event-driven microservices backend with live synchronization across devices.

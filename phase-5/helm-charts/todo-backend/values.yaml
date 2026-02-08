@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: todo-backend
+  repository: phase5-backend
   pullPolicy: IfNotPresent
   tag: "v1"
 
@@ -24,6 +24,14 @@ securityContext: {}
 service:
   type: LoadBalancer
   port: 8000
+
+# Dapr configuration
+dapr:
+  enabled: true
+  appId: "backend-api"
+  appPort: 8000
+  config: "app-config"
+  components: ["pubsub", "statestore"]
 
 env:
   HOST: "0.0.0.0"

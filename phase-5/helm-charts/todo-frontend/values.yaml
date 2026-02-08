@@ -24,18 +24,29 @@ securityContext: {}
 service:
   type: LoadBalancer
   port: 3000
+  containerPort: 3000
 
 env:
   NEXT_PUBLIC_DEMO_MODE: "false"
-  NEXT_PUBLIC_API_URL: "http://localhost:8000"
-  NEXT_PUBLIC_BACKEND_URL: "http://localhost:8000"
+  NEXT_PUBLIC_API_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_BACKEND_URL: "http://127.0.0.1:8000"
   NEXT_PUBLIC_DEBUG: "true"
-  NEXT_PUBLIC_CHATKIT_API_URL: "http://localhost:8000/api/chatkit"
+  NEXT_PUBLIC_CHATKIT_API_URL: "http://127.0.0.1:8000/api/chatkit"
   NEXT_PUBLIC_CHATKIT_DOMAIN_KEY: "your-domain-key-from-openai-platform"
+  NEXT_PUBLIC_WEBSOCKET_URL: "ws://127.0.0.1:8004"
   BETTER_AUTH_URL: "http://frontend-todo-frontend:3000/"
   # Server-side internal URL (for Next.js API routes running inside Kubernetes)
   BACKEND_URL: "http://backend-todo-backend:8000"
   NODE_ENV: "production"
+  PORT: "3000"
+
+# Build arguments for Docker image (must be set during docker build)
+# These are baked into the JavaScript bundle at build time
+buildArgs:
+  NEXT_PUBLIC_API_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_BACKEND_URL: "http://127.0.0.1:8000"
+  NEXT_PUBLIC_CHATKIT_API_URL: "http://127.0.0.1:8000/api/chatkit"
+  NEXT_PUBLIC_WEBSOCKET_URL: "ws://127.0.0.1:8004"
 
 envFrom:
   - secretRef:

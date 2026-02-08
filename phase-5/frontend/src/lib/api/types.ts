@@ -19,6 +19,9 @@ export type {
   UserProfileResponse,
   PasswordChangeResponse,
   ApiErrorResponse,
+  NotificationListResponse,
+  AuditLogListResponse,
+  AuditLogFilters,
 
   // Request types
   ApiRequestConfig,

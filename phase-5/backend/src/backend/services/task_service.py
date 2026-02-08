@@ -11,6 +11,10 @@ from dateutil.relativedelta import relativedelta
 
 from backend.models.task import Task, TaskCreate, TaskUpdate, TaskListResponse
 from backend.models.notification import Notification
+from backend.utils.event_publisher import (
+    publish_task_created,
+    publish_task_completed,
+)
 
 
 class TaskService:
@@ -187,6 +191,22 @@ class TaskService:
         self.session.add(task)
         await self.session.commit()
         await self.session.refresh(task)
+
+        # Publish task-created event for audit logging, WebSocket broadcast
+        await publish_task_created(
+            user_id=user_id,
+            task_id=str(task.id),
+            title=task.title,
+            description=task.description,
+            priority=task.priority.value,
+            due_date=task.due_date.isoformat() if task.due_date else None,
+            reminder_at=task.reminder_at.isoformat() if task.reminder_at else None,
+            recurring_rule=task.recurring_rule,
+            recurring_end_date=task.recurring_end_date.isoformat()
+            if task.recurring_end_date else None,
+            tags=task.tags or [],
+        )
+
         return task
 
     async def get(self, user_id: str, task_id: UUID) -> Optional[Task]:
@@ -323,6 +343,9 @@ class TaskService:
         if not task:
             raise ValueError("Task not found")
 
+        # Track previous completion state for event publishing
+        was_completed_before = task.completed
+
         # Apply updates with validation
         if title is not None:
             if not title or len(title.strip()) == 0:
@@ -402,6 +425,18 @@ class TaskService:
         task.updated_at = datetime.utcnow()  # Naive UTC datetime for database
         await self.session.commit()
         await self.session.refresh(task)
+
+        # If task was just completed, publish task-completed event for recurring task generation
+        if not was_completed_before and task.completed:
+            await publish_task_completed(
+                user_id=user_id,
+                task_id=str(task.id),
+                title=task.title,
+                recurring_rule=task.recurring_rule,
+                recurring_end_date=task.recurring_end_date.isoformat()
+                if task.recurring_end_date else None,
+            )
+
         return task
 
     async def delete(self, user_id: str, task_id: UUID) -> None:
@@ -436,7 +471,8 @@ class TaskService:
         """
         Toggle task completion status.
 
-        If toggling to completed and the task is recurring, creates the next instance.
+        If toggling to completed and the task is recurring, publishes an event
+        for the recurring-service to create the next instance.
 
         Args:
             user_id: User ID from JWT
@@ -456,10 +492,19 @@ class TaskService:
         task.completed = not task.completed
         task.updated_at = datetime.utcnow()  # Naive UTC datetime for database
 
-        # If completing a recurring task, create the next instance
-        if is_completing and task.recurring_rule:
-            await self.create_next_recurring_task(task)
-
         await self.session.commit()
         await self.session.refresh(task)
+
+        # Publish task-completed event for recurring task generation
+        # The recurring-service will handle creating the next instance
+        if is_completing:
+            await publish_task_completed(
+                user_id=user_id,
+                task_id=str(task.id),
+                title=task.title,
+                recurring_rule=task.recurring_rule,
+                recurring_end_date=task.recurring_end_date.isoformat()
+                if task.recurring_end_date else None,
+            )
+
         return task

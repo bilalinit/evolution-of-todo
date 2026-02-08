@@ -22,6 +22,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Plus } from "lucide-react";
 import { Task, ActiveFilters, SortConfig, parseSearchQuery } from "@/types/task";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
+import { useTaskRealtimeUpdates } from "@/hooks/useWebSocket";
 
 export default function TasksPage() {
   const { session, isLoading: sessionLoading } = useSession();
@@ -55,6 +56,18 @@ export default function TasksPage() {
 
   // Get user ID from session
   const userId = session?.user?.id;
+
+  // Enable real-time updates via WebSocket → SSE fallback
+  // This will automatically refresh the task list when changes are detected
+  useTaskRealtimeUpdates(
+    userId,
+    (event) => {
+      console.log('[Realtime] Task update received:', event);
+      // Invalidate and refetch tasks when any task event is received
+      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+    },
+    true // enabled
+  );
 
   // Tasks query with filters
   const {

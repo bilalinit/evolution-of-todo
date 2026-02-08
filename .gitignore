@@ -191,3 +191,34 @@ phase-3/frontend/next-env.d.ts
 phase-3/frontend/.contentlayer/
 phase-3/frontend/tsconfig.tsbuildinfo
 
+# Phase 5 - Microservices with Dapr (runtime and build files)
+phase-5/backend/.venv/
+phase-5/backend/uv.lock
+phase-5/backend/.pytest_cache/
+phase-5/backend/.ruff_cache/
+phase-5/backend/.mypy_cache/
+phase-5/backend/*.log
+phase-5/backend/logs/
+
+# Phase 5 Frontend (runtime and build files)
+phase-5/frontend/node_modules/
+phase-5/frontend/.next/
+phase-5/frontend/out/
+phase-5/frontend/build/
+phase-5/frontend/dist/
+phase-5/frontend/.turbo/
+phase-5/frontend/coverage/
+phase-5/frontend/*.log
+phase-5/frontend/.env*.local
+phase-5/frontend/.vercel/
+phase-5/frontend/.sentryclirc
+phase-5/frontend/next-env.d.ts
+phase-5/frontend/.contentlayer/
+phase-5/frontend/tsconfig.tsbuildinfo
+
+# Phase 5 Docker Compose
+phase-5/docker-compose.override.yml
+
+# Phase 5 Dapr local components
+phase-5/k8s-dapr/components/local/*.yaml
+

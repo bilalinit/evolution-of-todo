@@ -136,8 +136,9 @@ export class ApiClient {
 }
 
 // Create and export a singleton instance
+// Use Next.js API routes which proxy through Dapr to backend services
 const apiClient = new ApiClient(
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  process.env.NEXT_PUBLIC_API_URL || ''  // Empty string = relative URL to Next.js API routes
 );
 
 export default apiClient;

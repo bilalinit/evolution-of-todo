@@ -1,833 +1,747 @@
-# ChatKit + Agents + MCP Backend - Phase 3 Complete
+# Phase 5: Backend Microservices with Dapr
 
-Complete ChatKit integration with dual-agent AI system and MCP (Model Context Protocol) for todo task management. Built with OpenAI ChatKit, OpenAI Agents SDK, FastAPI, and featuring Urdu language specialization.
+Event-driven microservices architecture with Dapr runtime, featuring 6 independent services, real-time updates, automatic recurring tasks, reminder notifications, and complete audit trail.
+
+---
 
 ## 🛠️ Technology Stack
 
+### Core Framework
 - **Python 3.12+** - Modern Python with async/await support
-- **OpenAI ChatKit** - Complete ChatKit integration via CDN and backend
-- **OpenAI Agents SDK 0.6.5+** - Multi-agent framework
-- **MCP SDK 0.6.5+** - Model Context Protocol for tool integration
-- **FastAPI** - High-performance Python web framework
-- **Xiaomi mimo-v2-flash** - Cost-effective AI model
-- **SQLModel** - Type-safe ORM for Python with async support
-- **Neon Serverless PostgreSQL** - Cloud-native PostgreSQL database
+- **FastAPI** - High-performance async web framework
+- **SQLModel** - Type-safe ORM with async support
 - **UV** - Modern Python package manager
+
+### Microservices Technologies 🆕
+- **Dapr v1.15+** - Distributed application runtime
+- **Dapr SDK for Python** - Python integration for Dapr
+- **Kafka/Redpanda** - Event streaming via Dapr Pub/Sub
+- **Redis** - Dapr state store for idempotency
+- **WebSocket** - Real-time bidirectional communication
+- **SSE** - Server-Sent Events for tunnel compatibility
+
+### AI Integration (from Phase 3)
+- **OpenAI ChatKit** - Complete ChatKit integration
+- **OpenAI Agents SDK 0.6.5+** - Multi-agent framework
+- **MCP SDK 0.6.5+** - Model Context Protocol for tools
+- **Xiaomi mimo-v2-flash** - Cost-effective AI model
+
+### Data & Security
+- **Neon Serverless PostgreSQL** - Cloud-native database (SSL required)
 - **python-jose** - JWT token handling
-- **pytest** - Async testing framework
 - **Better Auth Integration** - JWT compatibility with frontend
+- **pytest** - Async testing framework
+
+---
+
+## 🏗️ Microservices Architecture
+
+### 6 Independent Services
+
+| Service | Port | Description | Health Endpoint |
+|---------|------|-------------|-----------------|
+| **backend-api** | 8000 | Main API with ChatKit + Agents + Task CRUD | `/health` |
+| **recurring-service** | 8001 | Generates next recurring tasks on completion | `/health` |
+| **notification-service** | 8002 | Creates reminder notifications (cron-based) | `/health` |
+| **audit-service** | 8003 | Logs all task events to audit trail | `/health` |
+| **websocket-service** | 8004 | Real-time broadcasts (WebSocket + SSE) | `/health` |
+
+### Event Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Frontend (Next.js + WebSocket)                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         backend-api (Port 8000)                             │
+│  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
+│  │   ChatKit   │ │    Agents    │ │   Task CRUD │ │   Event Publisher   │ │
+│  │   Server    │ │    (Dual)    │ │   (User     │ │   (Dapr Pub/Sub)    │ │
+│  │             │ │              │ │   Isolated) │ │                     │ │
+│  └─────────────┘ └──────────────┘ └─────────────┘ └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼ Dapr Pub/Sub (Kafka)
+        ┌───────────────────────────┼───────────────────┬─────────────────────┐
+        │                           │                   │                     │
+┌───────▼──────┐    ┌─────────────────▼──────┐  ┌──────▼──────┐  ┌────────▼────────┐
+│   recurring  │    │     notification        │  │    audit    │  │   websocket     │
+│   -service   │    │      -service            │  │  -service  │  │   -service      │
+│   Port 8001  │    │      Port 8002            │  │  Port 8003  │  │   Port 8004      │
+│              │    │                          │  │            │  │                 │
+│ Subscribes:  │    │ Cron Binding:            │  │ Subscribes:│  │ Subscribes:     │
+│task-completed│    │ @every 1m                │  │ All events │  │ All events      │
+│              │    │                          │  │            │  │                 │
+│Publishes:    │    │ Checks:                  │  │ Logs:      │  │ Broadcasts:     │
+│task-created  │    │ due reminders            │  │ All events │  │ WebSocket + SSE │
+└──────────────┘    └──────────────────────────┘  └─────────────┘  └─────────────────┘
+        │                    │                       │               │
+        └────────────────────┴───────────────────────┴───────────────┘
+                                        │
+                                        ▼
+                              ┌──────────────────┐
+                              │   Neon DB +      │
+                              │   Dapr State     │
+                              │   (Redis)        │
+                              └──────────────────┘
+```
+
+---
+
+## 🔄 Event System (6 Kafka Topics)
+
+| Topic | Publisher | Subscribers | Event Data |
+|-------|-----------|-------------|------------|
+| `task-created` | backend-api | audit-service, websocket-service, recurring-service | `{event_id, event_type, user_id, data: {task}}` |
+| `task-updated` | backend-api | audit-service, websocket-service | `{event_id, event_type, user_id, data: {task}}` |
+| `task-completed` | backend-api | audit-service, websocket-service, recurring-service | `{event_id, event_type, user_id, data: {task}}` |
+| `task-deleted` | backend-api | audit-service, websocket-service | `{event_id, event_type, user_id, data: {task_id}}` |
+| `reminder-due` | notification-service | websocket-service | `{event_id, event_type, user_id, data: {reminder}}` |
+| `task-updates` | websocket-service | frontend | Aggregated for UI |
+
+---
+
+## 📦 Project Structure
+
+```
+phase-5/backend/
+├── src/backend/
+│   ├── main.py                       # Main API (port 8000)
+│   ├── config.py                     # Environment configuration
+│   ├── database.py                   # PostgreSQL connection
+│   │
+│   ├── agents.py                     # Dual-agent system (Orchestrator + UrduSpecialist)
+│   ├── chatkit_server.py             # ChatKitServer implementation
+│   ├── chatkit_store.py              # PostgreSQL store (14 methods)
+│   │
+│   ├── auth/                         # Authentication modules
+│   │   └── jwt.py                    # JWT verification
+│   │
+│   ├── middleware/                   # Middleware components
+│   │   └── auth.py                   # Authentication middleware
+│   │
+│   ├── models/                       # Database models
+│   │   ├── task.py                   # Task entity with Phase 5 fields
+│   │   ├── notification.py           # Notification entity
+│   │   ├── audit_log.py              # Audit log entity
+│   │   └── chatkit.py                # ChatKit models
+│   │
+│   ├── routes/                       # API endpoints
+│   │   ├── tasks.py                  # Task CRUD with event publishing
+│   │   ├── profile.py                # User profile and stats
+│   │   └── notifications.py          # Notification management
+│   │
+│   ├── services/                     # Business logic
+│   │   ├── task_service.py           # Task service with user isolation
+│   │   └── microservices/            # 🆕 Microservice implementations
+│   │       ├── recurring_service.py  # Port 8001 - Auto-generate recurring tasks
+│   │       ├── notification_service.py # Port 8002 - Reminder notifications
+│   │       ├── audit_service.py      # Port 8003 - Event logging
+│   │       └── websocket_service.py  # Port 8004 - Real-time broadcasts
+│   │
+│   └── utils/                        # 🆕 Microservice utilities
+│       ├── event_publisher.py        # Dapr pub/sub event publishing
+│       ├── idempotency.py            # Duplicate prevention
+│       └── dapr_state.py             # Dapr state store operations
+│
+├── migrations/                       # Database migrations
+│   ├── 001_chatkit_tables.sql        # ChatKit tables
+│   ├── 002_advanced_features.sql    # Phase 5 task fields
+│   └── 003_dapr_state.sql            # Dapr state table
+│
+├── task_serves_mcp_tools.py          # MCP server with 5 CRUD tools
+├── setup_chatkit.py                  # Setup and validation
+├── docker-compose.yml                # 🆕 Local development stack
+├── Dockerfile                        # Multi-service Docker build
+├── pyproject.toml                    # UV dependencies (includes dapr)
+├── .env.example                      # Environment template
+└── DAPR_README.md                    # Dapr setup guide
+```
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.11+
-- UV package manager
-- Neon PostgreSQL database
-- BETTER_AUTH_SECRET from frontend
+### Option 1: Docker Compose (Recommended for Local) 🧪
 
-### Installation
+**Best for**: Quick iteration, debugging all services locally
 
 ```bash
-# Navigate to backend directory
-cd phase-3/backend
+cd phase-5
 
-# Install UV (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Start all services with Dapr sidecars
+docker-compose up -d
+
+# Services available at:
+# - Frontend:        http://localhost:3000
+# - Backend API:     http://localhost:8000
+# - Recurring:       http://localhost:8001
+# - Notification:    http://localhost:8002
+# - Audit:           http://localhost:8003
+# - WebSocket:       http://localhost:8004
+# - Redpanda Console: http://localhost:8082
+
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f backend-api
+docker-compose logs -f recurring-service
+
+# Stop all services
+docker-compose down
+```
+
+---
+
+### Option 2: Minikube + Dapr (Production-Like) ☸️
+
+**Best for**: Testing Kubernetes deployment with Dapr sidecars
+
+```bash
+# 1. Start Minikube
+minikube start
+eval $(minikube docker-env)
+
+# 2. Initialize Dapr
+dapr init --kubernetes --wait
+
+# 3. Apply Dapr components
+kubectl apply -f phase-5/k8s-dapr/components/
+kubectl apply -f phase-5/k8s-dapr/bindings/
+kubectl apply -f phase-5/k8s-dapr/subscriptions/
+
+# 4. Create secrets
+kubectl create secret generic app-secrets \
+  --from-literal=DATABASE_URL='postgresql://user:pass@host/db?sslmode=require' \
+  --from-literal=OPENAI_API_KEY='sk-proj-your-key' \
+  --from-literal=XIAOMI_API_KEY='your-xiaomi-key' \
+  --from-literal=PORT='8000' \
+  --from-literal=HOST='0.0.0.0' \
+  --from-literal=DEBUG='true'
+
+# 5. Build and deploy
+docker build -t phase5-backend:v1 -f backend/Dockerfile backend
+helm upgrade --install backend-api helm-charts/todo-backend \
+  --set image.repository=phase5-backend --set image.tag=v1
+# ... deploy other services
+
+# 6. Start tunnel (NEW terminal)
+minikube tunnel
+```
+
+**📖 Full Guide**: See **[DAPR_README.md](DAPR_README.md)**
+
+---
+
+### Option 3: Local Development (Single Service)
+
+**Best for**: Developing individual microservices
+
+```bash
+cd phase-5/backend
 
 # Install dependencies
 uv sync
 
-# Set up environment variables
+# Create environment file
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with DATABASE_URL, OPENAI_API_KEY, XIAOMI_API_KEY, etc.
 
-# Setup ChatKit tables and validation
+# Setup ChatKit tables (one-time)
 python setup_chatkit.py
+
+# Run specific service
+# Main API (port 8000)
+uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Recurring service (port 8001)
+uv run uvicorn backend.services.microservices.recurring_service:app --port 8001 --reload
+
+# Notification service (port 8002)
+uv run uvicorn backend.services.microservices.notification_service:app --port 8002 --reload
+
+# Audit service (port 8003)
+uv run uvicorn backend.services.microservices.audit_service:app --port 8003 --reload
+
+# WebSocket service (port 8004)
+uv run uvicorn backend.services.microservices.websocket_service:app --port 8004 --reload
 ```
 
-### Environment Configuration
+---
 
-Create `.env` file with the following variables:
+## 🔧 Environment Variables
+
+### Required Variables
 
 ```bash
-# Database (same as frontend)
-DATABASE_URL="postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require"
+# Database (Neon PostgreSQL with SSL)
+DATABASE_URL="postgresql+asyncpg://user:pass@ep-xxx.aws.neon.tech/db?sslmode=require"
 
-# JWT Secret (MUST match frontend Better Auth)
-BETTER_AUTH_SECRET="your-32-char-secret-from-frontend"
+# Authentication (MUST match frontend Better Auth)
+BETTER_AUTH_SECRET="your-32-char-secret"
 
-# OpenAI Configuration (for ChatKit + Agents)
-OPENAI_API_KEY="sk-..."  # Required for ChatKit sessions and Agents SDK
-
-# AI Configuration (Xiaomi for Agents)
+# AI Configuration
+OPENAI_API_KEY="sk-proj-your-openai-key"
 XIAOMI_API_KEY="your-xiaomi-mimo-api-key"
-XIAOMI_BASE_URL="https://api.xiaomi.com/v1"  # Optional, defaults to Xiaomi endpoint
 
 # Server Configuration
 HOST=0.0.0.0
 PORT=8000
 DEBUG=true
 
-# CORS Origins (JSON array)
+# CORS Origins
 CORS_ORIGINS='["http://localhost:3000", "http://127.0.0.1:3000"]'
 
-# Performance & Timeouts
+# 🆕 Dapr Configuration
+DAPR_HOST="localhost"
+DAPR_HTTP_PORT="3500"
+
+# Timeouts
 MCP_TIMEOUT=30
 AGENT_TIMEOUT=60
 ```
 
-### Development
+### Microservice-Specific Variables
 
-```bash
-# Start development server with hot reload
-uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+Each microservice inherits the base config but may override:
+- `PORT` - Service-specific port (8001-8004)
+- `DAPR_HTTP_PORT` - Dapr sidecar port (3501-3504)
 
-# Test agent system (Checkpoint 1)
-uv run python scripts/test_agents.py
-
-# Test MCP integration (Checkpoint 2)
-uv run python scripts/test_mcp_integration.py
-
-# Run pytest tests
-uv run pytest -v
-
-# Run type checking
-uv run mypy src/
-
-# Run linting
-uv run ruff check src/
-```
-
-Open [http://localhost:8000](http://localhost:8000) to view API documentation.
-
-## 🏗️ Architecture
-
-### Technology Stack
-
-- **Framework**: FastAPI with async/await patterns + OpenAI Agents SDK
-- **Language**: Python 3.12+ (type-safe)
-- **AI Model**: Xiaomi mimo-v2-flash (cost-effective)
-- **MCP Protocol**: Model Context Protocol for tool integration
-- **Package Manager**: UV (modern Python dependency management)
-- **Database**: Neon PostgreSQL with SQLModel ORM
-- **Authentication**: python-jose for JWT verification
-- **Testing**: pytest with async support
-- **API Documentation**: Automatic OpenAPI/Swagger
-
-### Project Structure
-
-```
-phase-3/backend/
-├── src/backend/
-│   ├── main.py                 # FastAPI app + ChatKit endpoints
-│   ├── config.py               # Environment configuration
-│   ├── database.py             # PostgreSQL connection & session
-│   ├── exceptions.py           # Custom exception handlers
-│   │
-│   ├── agents.py               # Dual-agent system (Orchestrator + UrduSpecialist)
-│   ├── chatkit_server.py       # ChatKitServer implementation
-│   ├── chatkit_store.py        # PostgreSQL store (14 methods)
-│   │
-│   ├── auth/                   # Authentication modules
-│   │   ├── __init__.py
-│   │   └── jwt.py              # JWT verification utilities
-│   │
-│   ├── models/                 # Database models & schemas
-│   │   ├── __init__.py
-│   │   ├── task.py             # Task entity & response models
-│   │   └── chatkit.py          # ChatKit database models
-│   │
-│   ├── services/               # Business logic layer
-│   │   ├── __init__.py
-│   │   └── task_service.py     # TaskService with user isolation
-│   │
-│   └── middleware/             # Middleware components
-│       ├── __init__.py
-│       └── auth.py             # Authentication middleware
-│
-├── migrations/                 # Database migrations
-│   └── 001_chatkit_tables.sql  # ChatKit tables migration
-│
-├── task_serves_mcp_tools.py    # MCP server with 5 CRUD tools
-├── setup_chatkit.py            # Setup and validation script
-├── test_chatkit.py             # ChatKit session tests
-├── test_chatkit_session.py     # ChatKit session tests
-├── scripts/                    # Testing & validation scripts
-│   ├── test_agents.py          # Agent communication tests
-│   ├── test_mcp_integration.py # MCP integration tests
-│   ├── validate_structure.py   # Architecture validation
-│   └── test_integration.py     # End-to-end tests
-│
-├── pyproject.toml              # UV project configuration (includes openai packages)
-├── uv.lock                     # Dependency lock file
-└── .env.example                # Environment template
-```
-
-## 🔐 Authentication
-
-### JWT Integration
-
-The backend uses JWT tokens signed with the same secret as Better Auth:
-
-```python
-# auth/jwt.py
-from jose import jwt, JWTError
-
-def verify_token(token: str) -> str:
-    """Verify JWT and return user_id"""
-    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    return payload["sub"]  # user_id
-```
-
-### Authentication Middleware
-
-All protected routes use the `get_current_user` dependency:
-
-```python
-# middleware/auth.py
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> str:
-    """Extract and verify user_id from JWT"""
-    return verify_token(credentials.credentials)
-```
-
-### User Ownership Enforcement
-
-Every database query is scoped to the authenticated user:
-
-```python
-# routes/tasks.py
-async def get_tasks(
-    user_id: str,
-    current_user: str = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
-):
-    if user_id != current_user:
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    # All queries include user_id filter
-    query = select(Task).where(Task.user_id == user_id)
-```
+---
 
 ## 📡 API Endpoints
 
-### ChatKit Integration
+### Main Backend API (port 8000)
 
-**ChatKit Session Creation**
-```http
-POST /api/chatkit/session
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
+**Task Management:**
+- `GET /api/{user_id}/tasks` - List with filters (status, priority, category, search)
+- `GET /api/{user_id}/tasks/{task_id}` - Get single task
+- `POST /api/{user_id}/tasks` - Create task → publishes `task-created`
+- `PUT /api/{user_id}/tasks/{task_id}` - Update task → publishes `task-updated`
+- `PATCH /api/{user_id}/tasks/{task_id}/complete` - Toggle → publishes `task-completed`
+- `DELETE /api/{user_id}/tasks/{task_id}` - Delete task → publishes `task-deleted`
 
-{
-  "user_id": "user-123",
-  "metadata": {
-    "userInfo": {
-      "id": "user-123",
-      "name": "John Doe"
-    }
-  }
-}
+**Notifications:**
+- `GET /api/{user_id}/notifications` - List notifications
+- `GET /api/{user_id}/notifications/unread-count` - Get unread count
+- `POST /api/{user_id}/notifications/{id}/read` - Mark as read
+- `POST /api/{user_id}/notifications/read-all` - Mark all as read
+- `DELETE /api/{user_id}/notifications/{id}` - Delete notification
 
-Response:
-{
-  "client_secret": "chatkit-secret-xxx",
-  "session_id": "session-xxx",
-  "user_id": "user-123",
-  "expires_at": "2026-01-20T12:00:00Z"
-}
-```
+**Profile & Audit:**
+- `GET /api/{user_id}/profile` - User info and task statistics
+- `GET /api/{user_id}/audit` - Get audit logs
 
-**ChatKit Main Endpoint (All Operations)**
-```http
-POST /api/chatkit
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
+**ChatKit Integration:**
+- `POST /api/chatkit` - Main ChatKit endpoint
+- `POST /api/chatkit/session` - Create session
+- `GET /api/chatkit/health` - Health check
 
-# Handles all ChatKit protocol operations:
-# - threads.create, threads.get, threads.list
-# - messages.create, messages.list
-# - runs.create (with streaming response)
-# - All other ChatKit protocol operations
+**Agent Communication:**
+- `POST /api/chat` - Chat with dual-agent system
+- `GET /api/chat/health` - Agent health check
 
-Response: Streaming or JSON based on operation
-```
+### Microservice Endpoints
 
-**ChatKit Health Check**
-```http
-GET /api/chatkit/health
+**Recurring Service** (port 8001):
+- `GET /health` - Health check
+- `POST /events/task-completed` - Handle task completion event
 
-Response:
-{
-  "status": "healthy",
-  "agents": ["Orchestrator", "UrduSpecialist"],
-  "mcp_tools": ["create_task", "list_tasks", "update_task", "delete_task", "toggle_task"],
-  "timestamp": "2026-01-13T00:00:00Z"
-}
-```
+**Notification Service** (port 8002):
+- `GET /health` - Health check
+- `POST /cron-binding` - Dapr cron trigger (every 1 minute)
+- `GET /api/{user_id}/notifications` - Get notifications
+- `PATCH /api/notifications/{id}` - Mark as read
+- `DELETE /api/notifications/{id}` - Delete notification
 
-### Agent Communication
+**Audit Service** (port 8003):
+- `GET /health` - Health check
+- `GET /api/{user_id}/audit` - Get audit logs
+- `POST /events/task-created` - Log task creation
+- `POST /events/task-updated` - Log task update
+- `POST /events/task-completed` - Log completion
+- `POST /events/task-deleted` - Log deletion
 
-**Chat with AI Agents**
-```http
-POST /api/chat
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
+**WebSocket Service** (port 8004):
+- `GET /health` - Health check (with connection stats)
+- `WS /ws?user_id={id}` - WebSocket endpoint
+- `GET /api/sse/{user_id}` - SSE endpoint
+- `POST /events/task-created` - Broadcast task creation
+- `POST /events/task-updated` - Broadcast task update
+- `POST /events/task-completed` - Broadcast completion
+- `POST /events/task-deleted` - Broadcast deletion
+- `POST /events/reminder-due` - Broadcast reminder
 
-{
-  "message": "Create a task for tomorrow's meeting",
-  "user_id": "user-123"
-}
+---
 
-Response:
-{
-  "success": true,
-  "data": {
-    "message": "Task created successfully",
-    "agent": "UrduSpecialist",  # or "Orchestrator"
-    "tasks": [...],
-    "tool_calls": [...]
-  }
-}
-```
+## 🎨 Advanced Task Features (Phase 5)
 
-**Agent Health Check**
-```http
-GET /api/chat/health
+### Recurring Tasks
 
-Response:
-{
-  "status": "healthy",
-  "service": "mcp-agent-backend",
-  "version": "0.1.0",
-  "agents": ["Orchestrator", "UrduSpecialist"],
-  "mcp_tools": 5
-}
-```
+**Supported Rules**: `daily`, `weekly`, `monthly`, `yearly`
 
-### MCP Tool Operations (via Agents)
-
-The agents can perform these operations through natural language:
-
-**Create Task**
-```bash
-# Natural language example:
-"Create a task for tomorrow with high priority"
-
-# Agent executes: MCP create_task tool
-```
-
-**List Tasks**
-```bash
-# Natural language example:
-"Show me all work tasks due this week"
-
-# Agent executes: MCP list_tasks tool with filters
-```
-
-**Update Task**
-```bash
-# Natural language example:
-"Mark task as completed"
-
-# Agent executes: MCP update_task tool
-```
-
-**Delete Task**
-```bash
-# Natural language example:
-"Delete the meeting task"
-
-# Agent executes: MCP delete_task tool
-```
-
-**Toggle Task Status**
-```bash
-# Natural language example:
-"Toggle task status"
-
-# Agent executes: MCP toggle_task tool
-```
-
-### System Endpoints
-
-**Health Check**
-```http
-GET /health
-
-Response:
-{
-  "status": "healthy",
-  "service": "mcp-agent-backend",
-  "version": "0.1.0"
-}
-```
-
-**API Information**
-```http
-GET /
-
-Response:
-{
-  "message": "MCP Agent Backend API",
-  "version": "0.1.0",
-  "docs": "/docs",
-  "health": "/health",
-  "chat": "/api/chat"
-}
-```
-
-## 🗄️ Database
-
-### Models
-
-**Task Entity**
 ```python
-class Task(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    title: str = Field(min_length=1, max_length=200)
-    description: Optional[str] = Field(default=None, max_length=1000)
-    completed: bool = Field(default=False)
-    priority: Priority = Field(default=Priority.MEDIUM)
-    category: Category = Field(default=Category.OTHER)
-    due_date: Optional[date] = Field(default=None)
-    user_id: str = Field(index=True)  # References Better Auth user.id
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+# Create a recurring task
+POST /api/{user_id}/tasks
+{
+    "title": "Team Standup",
+    "description": "Daily team sync",
+    "recurring_rule": "daily",
+    "recurring_end_date": "2026-12-31T23:59:59Z",
+    "due_date": "2026-01-15",
+    "reminder_at": "2026-01-15T09:00:00Z"
+}
 ```
 
-### MCP Tool Schemas
+**How It Works**:
+1. User completes the recurring task
+2. `backend-api` publishes `task-completed` event
+3. `recurring-service` receives event
+4. Calculates next occurrence based on `recurring_rule`
+5. Creates new task with same title, description, category
+6. Publishes `task-created` event for new task
 
-The MCP server exposes 5 tools with strict schemas:
+### Reminders
 
-1. **create_task**: Creates a new task with user isolation
-2. **list_tasks**: Lists tasks with filtering (status, category, search)
-3. **update_task**: Updates existing task fields
-4. **delete_task**: Deletes task with validation
-5. **toggle_task**: Toggles task completion status
+**Timezone Support**: PKT (UTC+5)
 
-All tools include user_id validation to ensure multi-tenant security.
+```python
+# Create task with reminder
+POST /api/{user_id}/tasks
+{
+    "title": "Doctor Appointment",
+    "due_date": "2026-01-20",
+    "reminder_at": "2026-01-20T09:00:00+05:00"
+}
+```
 
-**Database Schema**
+**How It Works**:
+1. Dapr cron binding triggers `notification-service` every minute
+2. Service queries for tasks where `reminder_at <= NOW()` and `reminder_sent = FALSE`
+3. Creates notification in database
+4. Marks `reminder_sent = TRUE`
+5. Publishes `reminder-due` event
+6. `websocket-service` broadcasts to connected clients
+
+### Tags
+
+**Flexible Tagging** with JSONB:
+
+```python
+# Create task with tags
+POST /api/{user_id}/tasks
+{
+    "title": "Project Review",
+    "tags": ["urgent", "frontend", "sprint-23"]
+}
+
+# Search by tags
+GET /api/{user_id}/tasks?search=#urgent
+```
+
+---
+
+## 🗄️ Database Schema
+
+### Extended Task Table (Phase 5)
+
 ```sql
 CREATE TABLE IF NOT EXISTS task (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(200) NOT NULL,
     description VARCHAR(1000),
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    priority VARCHAR(10) NOT NULL,
-    category VARCHAR(20) NOT NULL,
+    priority VARCHAR(10) NOT NULL,  -- low, medium, high
+    category VARCHAR(20) NOT NULL,  -- work, personal, shopping, health, other
     due_date DATE,
     user_id VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Phase 5: Advanced Features
+    recurring_rule VARCHAR(20),              -- 'daily', 'weekly', 'monthly', 'yearly'
+    recurring_end_date TIMESTAMPTZ,          -- Optional end date for recurrence
+    parent_task_id UUID,                     -- Links recurring task instances
+    reminder_at TIMESTAMPTZ,                 -- When to send reminder
+    reminder_sent BOOLEAN DEFAULT FALSE,     -- Track if reminder was sent
+    tags JSONB DEFAULT '[]'::jsonb,          -- Flexible tag array
+
+    CONSTRAINT chk_recurring_requires_due
+        CHECK (recurring_rule IS NULL OR due_date IS NOT NULL)
 );
 
+-- Indexes for performance
 CREATE INDEX idx_task_user_id ON task(user_id);
-CREATE INDEX idx_task_completed ON task(completed);
+CREATE INDEX idx_task_recurring_rule ON task(recurring_rule);
+CREATE INDEX idx_task_reminder_at ON task(reminder_at);
+CREATE INDEX idx_task_tags ON task USING gin(tags);
+CREATE INDEX idx_task_parent_task_id ON task(parent_task_id);
 ```
 
-### Connection Management
+### Notifications Table
 
-**Async Engine with Connection Pooling**
+```sql
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    notification_type VARCHAR(50) DEFAULT 'reminder',
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    task_id UUID,  -- Optional reference to task
+    FOREIGN KEY (task_id) REFERENCES task(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_read ON notifications(read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at);
+```
+
+### Audit Logs Table
+
+```sql
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type VARCHAR(50) NOT NULL,  -- task_created, task_updated, etc.
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    data JSONB DEFAULT '{}'
+);
+
+CREATE INDEX idx_audit_logs_event_type ON audit_logs(event_type);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+```
+
+### Dapr State Table
+
+```sql
+CREATE TABLE IF NOT EXISTS state (
+    key TEXT PRIMARY KEY,
+    value JSONB,
+    isbinary BOOLEAN DEFAULT FALSE,
+    insertdate TIMESTAMP DEFAULT NOW(),
+    updatedate TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_state_key_prefix ON state(key text_pattern_ops);
+CREATE INDEX idx_state_updatedate ON state(updatedate);
+```
+
+---
+
+## 🔄 Dapr Integration
+
+### Event Publishing
+
+**Location**: `src/backend/utils/event_publisher.py`
+
 ```python
-# database.py
-engine = create_async_engine(
-    db_url,
-    echo=settings.debug,
-    pool_pre_ping=True,
-    pool_recycle=300,  # Recycle connections every 5 minutes
+from backend.utils.event_publisher import publish_task_created
+
+# After creating a task
+await publish_task_created(
+    event_id=str(uuid4()),
+    user_id=user_id,
+    task_data=task.model_dump()
 )
 ```
 
-**Neon Pooler Integration**
-- Automatically adds `-pooler` to Neon database hostnames
-- Prevents `InvalidCachedStatementError`
-- Handles connection caching on Neon's side
+**Available Publishers**:
+- `publish_task_created()` - Publishes to `task-created` topic
+- `publish_task_updated()` - Publishes to `task-updated` topic
+- `publish_task_completed()` - Publishes to `task-completed` topic
+- `publish_task_deleted()` - Publishes to `task-deleted` topic
+- `publish_reminder_due()` - Publishes to `reminder-due` topic
+
+### Idempotency
+
+**Location**: `src/backend/utils/idempotency.py`
+
+Prevents duplicate event processing using Dapr State Store:
+
+```python
+from backend.utils.idempotency import check_and_mark_processed
+
+# In microservice event handler
+already_processed = await check_and_mark_processed(
+    event_id=event_data["event_id"],
+    service_name="recurring-service"
+)
+
+if already_processed:
+    logger.info(f"Event {event_id} already processed, skipping")
+    return
+```
+
+**Key Format**: `processed-{event_id}-{service_name}`
+
+### State Management
+
+**Location**: `src/backend/utils/dapr_state.py`
+
+```python
+from backend.utils.dapr_state import dapr_save_state, dapr_get_state
+
+# Save state
+await dapr_save_state(
+    key=f"reminder-{task_id}",
+    value={"sent": True, "timestamp": datetime.now().isoformat()}
+)
+
+# Retrieve state
+state = await dapr_get_state(key=f"reminder-{task_id}")
+```
+
+---
 
 ## 🧪 Testing
 
 ### Test Scripts
 
-**Agent Communication Tests (Checkpoint 1)**
 ```bash
-uv run python scripts/test_agents.py
+# Run pytest tests
+uv run pytest -v
+
+# Test specific service
+uv run pytest tests/test_recurring_service.py
+
+# Run with coverage
+uv run pytest --cov=src/backend --cov-report=html
 ```
-
-**MCP Integration Tests (Checkpoint 2)**
-```bash
-uv run python scripts/test_mcp_integration.py
-```
-
-**Structure Validation**
-```bash
-uv run python scripts/validate_structure.py
-```
-
-**End-to-End Integration Tests**
-```bash
-uv run python scripts/test_integration.py
-```
-
-### Test Coverage
-
-- ✅ Dual-agent system communication
-- ✅ Urdu language specialization
-- ✅ MCP tool execution and schemas
-- ✅ User isolation across all operations
-- ✅ JWT token creation and verification
-- ✅ Agent → MCP → Database flow
-- ✅ Error handling and recovery
-- ✅ Performance (<3s response times)
-- ✅ Security: Multi-layer user validation
 
 ### Manual Testing
 
-**Start the server:**
 ```bash
-cd phase-3/backend
-uv run uvicorn backend.main:app --reload --port 8000
-```
-
-**Test with curl:**
-```bash
-# Get health check
-curl http://localhost:8000/health
-
-# Test agent health
-curl http://localhost:8000/api/chat/health
-
-# Test with JWT (replace with actual token)
-export JWT_TOKEN="your-jwt-token"
-
-# Chat with agents
-curl -X POST -H "Authorization: Bearer $JWT_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"message":"Create a task for tomorrow","user_id":"user-123"}' \
-     "http://localhost:8000/api/chat"
-
-# Test Urdu specialization
-curl -X POST -H "Authorization: Bearer $JWT_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"message":"میرا نام کیا ہے؟","user_id":"user-123"}' \
-     "http://localhost:8000/api/chat"
-```
-
-## 🔒 Security Features
-
-### Authentication & Authorization
-
-- **JWT Verification**: Every request validates the token signature
-- **User Ownership**: All queries scoped to authenticated user_id
-- **Multi-Layer Isolation**: JWT + query + service level validation
-- **Zero-Trust**: No trust between requests, verify on every call
-- **Proper Status Codes**: 401 for invalid tokens, 403 for ownership violations
-
-### MCP Tool Security
-
-- **User Isolation**: All MCP tools validate user_id before execution
-- **Per-Request Servers**: Dynamic MCP server lifecycle prevents state leakage
-- **Tool Validation**: Strict schemas prevent injection attacks
-- **Error Sanitization**: Sensitive errors never leak to clients
-
-### Input Validation
-
-- **Pydantic Models**: Type-safe request/response validation
-- **Field Constraints**: Length limits, enum validation, required fields
-- **Agent Guardrails**: Input validation at agent level before tool execution
-- **Error Handling**: Detailed error messages with proper HTTP status codes
-
-### Database Security
-
-- **SSL Required**: Neon PostgreSQL requires SSL connections
-- **Parameterized Queries**: SQLModel prevents SQL injection
-- **Connection Pooling**: Prevents connection exhaustion attacks
-- **Row-Level Security**: All queries include user_id filter
-
-## 🚀 Deployment
-
-### Production Configuration
-
-```bash
-# Environment variables for production
-DATABASE_URL="postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require"
-BETTER_AUTH_SECRET="production-secret-32+chars"
-XIAOMI_API_KEY="your-production-xiaomi-key"
-XIAOMI_BASE_URL="https://api.xiaomi.com/v1"
-HOST=0.0.0.0
-PORT=8000
-DEBUG=false
-CORS_ORIGINS='["https://yourdomain.com"]'
-MCP_TIMEOUT=30
-AGENT_TIMEOUT=60
-```
-
-### Running in Production
-
-```bash
-# Using uvicorn directly
-uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
-
-# Using the main.py directly
-uv run python -m backend.main
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-
-# Install UV
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
-
-# Copy project files
-COPY pyproject.toml uv.lock ./
-COPY src/ ./src/
-
-# Install dependencies
-RUN uv sync --frozen
-
-# Expose port
-EXPOSE 8000
-
-# Run application
-CMD ["uv", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-## 📊 Performance & Monitoring
-
-### Performance Optimizations
-
-- **Async Everything**: Non-blocking I/O throughout
-- **Connection Pooling**: Efficient database connection reuse
-- **Query Optimization**: Proper indexes on user_id and common filters
-- **Response Models**: Only send necessary data to client
-
-### Logging
-
-```python
-# Built-in logging
-logger.info(f"User {user_id} created task {task_id}")
-logger.error(f"Database connection failed: {error}")
-```
-
-### Health Monitoring
-
-- **/health endpoint**: For load balancer health checks
-- **Database connectivity**: Verified on startup
-- **Connection pool status**: Ready for monitoring tools
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**1. Database Connection Failed**
-```bash
-# Check DATABASE_URL format
-echo $DATABASE_URL
-
-# Verify Neon project is active
-# Ensure SSL mode is set: ?sslmode=require
-```
-
-**2. JWT Verification Failed**
-```bash
-# Check BETTER_AUTH_SECRET matches frontend
-echo $BETTER_AUTH_SECRET
-
-# Verify token length (32+ characters)
-# Ensure token hasn't expired
-```
-
-**3. AI API Issues**
-```bash
-# Check XIAOMI_API_KEY is set
-echo $XIAOMI_API_KEY
-
-# Verify API key is valid and active
-# Check XIAOMI_BASE_URL is correct
-# Ensure API quota is not exceeded
-```
-
-**4. MCP Tool Execution Failed**
-```bash
-# Check MCP server is running
-uv run python scripts/test_mcp_integration.py
-
-# Verify database connection
-# Check user isolation is working
-# Review MCP_TIMEOUT setting
-```
-
-**5. Agent Response Issues**
-```bash
-# Test agent communication
-uv run python scripts/test_agents.py
-
-# Check Urdu agent language settings
-# Verify handoff between agents
-# Review agent instructions
-```
-
-**6. CORS Errors**
-```bash
-# Check CORS_ORIGINS in .env
-echo $CORS_ORIGINS
-
-# Ensure frontend URL is included
-# No trailing slashes in origins
-```
-
-**7. Port Already in Use**
-```bash
-# Kill process on port 8000
-lsof -i :8000
-kill -9 <PID>
-
-# Or change PORT in .env
-```
-
-### Debug Mode
-
-```bash
-# Enable debug logging
-export DEBUG=true
-
-# Run with verbose output
-uv run uvicorn backend.main:app --reload --log-level debug
-```
-
-## 📚 API Documentation
-
-### Automatic OpenAPI Docs
-
-Once the server is running, access:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
-
-### Example API Flow
-
-1. **Authentication**: Login via frontend to get JWT token
-2. **Authorization**: Include token in `Authorization: Bearer <token>` header
-3. **Task Operations**: Use user_id from JWT (sub claim) in URL path
-4. **Response**: All endpoints return JSON with proper status codes
-
-## 🤝 Integration with Frontend
-
-### Frontend Configuration
-
-```typescript
-// frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_DEMO_MODE=false
-```
-
-### API Client Example
-
-```typescript
-// frontend/lib/api.ts
-export async function chatWithAgents(message: string, userId: string) {
-  const token = getAuthToken()
-
-  return fetch(`${API_BASE}/api/chat`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ message, user_id: userId })
-  })
-}
-```
-
-### Complete Integration
-
-1. **Start Backend**: `cd phase-3/backend && uv run uvicorn backend.main:app --reload`
-2. **Start Frontend**: `cd phase-3/frontend && npm run dev`
-3. **Configure Frontend**: Set `NEXT_PUBLIC_DEMO_MODE=false`
-4. **Test Flow**:
-   - Login via Better Auth
-   - Navigate to `/chatbot`
-   - Send message: "Create a task for tomorrow"
-   - See agent response and tool execution
-   - Verify task created in database
-
-## 🎯 Current Status
-
-**Branch**: `008-chatkit-integration` ✅ Complete
-**Tasks**: 164/164 (100% complete)
-**Status**: ✅ **Phase 3 Complete - ChatKit + Agents + MCP Ready for Production**
-
-### Completed Features
-
-- ✅ **ChatKit Integration**: Complete OpenAI ChatKit with custom server implementation
-- ✅ **Dual-agent system**: Orchestrator + UrduSpecialist with intelligent handoffs
-- ✅ **OpenAI Agents SDK**: Integration with Xiaomi mimo-v2-flash model
-- ✅ **MCP Server**: 5 CRUD tools (create, list, update, delete, toggle) with user isolation
-- ✅ **PostgreSQL Store**: Complete store with 14 methods for thread persistence
-- ✅ **ChatKitServer**: Custom server extending OpenAI ChatKit with Agents SDK
-- ✅ **Session Management**: OpenAI ChatKit session creation and refresh
-- ✅ **JWT Authentication**: Better Auth integration with python-jose
-- ✅ **Multi-layer Security**: JWT + query + service level validation
-- ✅ **Thread Persistence**: Complete chat history storage in PostgreSQL
-- ✅ **User Isolation**: Row Level Security + query filtering + service validation
-- ✅ **Comprehensive Testing**: Integration, security, and performance tests (164 tasks)
-- ✅ **Setup Script**: Automated `setup_chatkit.py` for environment validation
-- ✅ **Urdu Language**: Specialized agent for Urdu/English conversations
-
-### API Endpoints Implemented
-
-**ChatKit Endpoints:**
-- ✅ `POST /api/chatkit` - Main ChatKit endpoint (all operations)
-- ✅ `POST /api/chatkit/session` - ChatKit session creation
-- ✅ `GET /api/chatkit/health` - ChatKit system health
-
-**Agent Endpoints:**
-- ✅ `GET /api/chat/health` - Agent system health
-- ✅ `POST /api/chat` - Chat with AI agents (dual-agent routing)
-
-**MCP Tools:**
-- ✅ `create_task` - Create new task with user isolation
-- ✅ `list_tasks` - List tasks with filtering and pagination
-- ✅ `update_task` - Update existing task fields
-- ✅ `delete_task` - Delete task with validation
-- ✅ `toggle_task` - Toggle task completion status
-
-**System Endpoints:**
-- ✅ `GET /health` - System health check
-- ✅ `GET /` - API information
-
-### Technology Stack
-
-- **ChatKit**: OpenAI ChatKit v1.5.3 via CDN
-- **Agents SDK**: OpenAI Agents SDK 0.6.5+ with Xiaomi mimo-v2-flash
-- **MCP Protocol**: Model Context Protocol for tool integration
-- **Backend**: FastAPI with per-request MCP server lifecycle
-- **Database**: Neon PostgreSQL with async operations and RLS
-- **Authentication**: Better Auth with JWT tokens (HTTP-only cookies)
-
-### Quick Start
-
-```bash
-# Setup ChatKit (one-time)
-cd phase-3/backend
-python setup_chatkit.py
-
-# Start backend server
-uv run uvicorn backend.main:app --reload
-
-# Test ChatKit integration
-curl http://localhost:8000/api/chatkit/health
+# Test event publishing
+curl -X POST http://localhost:8000/api/user-123/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Task","priority":"high"}'
+
+# Check Kafka topics
+kubectl exec -it redpanda-0 -- rpk topic list
+
+# Consume from topic
+kubectl exec -it redpanda-0 -- rpk topic consume task-created
+
+# Test WebSocket connection
+wscat -c ws://localhost:8004/ws?user_id=user-123
 ```
 
 ---
 
-**Project**: ChatKit + Agents + MCP Integration - Phase 3
-**Branch**: `008-chatkit-integration`
-**Framework**: FastAPI + OpenAI ChatKit + OpenAI Agents SDK + MCP Protocol
-**Status**: ✅ Complete - Ready for Production
+## 🔐 Security Features
+
+### Authentication
+
+- **JWT Verification**: All endpoints validate JWT with Better Auth secret
+- **User Ownership**: Every query scoped to `user_id`
+- **Multi-Layer Isolation**: JWT + query + service level validation
+
+### Event Security
+
+- **Idempotency**: Dapr State Store prevents duplicate processing
+- **Event Validation**: Schema validation for all events
+- **User Isolation**: All events include `user_id` for filtering
+
+### Database Security
+
+- **SSL Required**: Neon PostgreSQL requires SSL
+- **Parameterized Queries**: SQLModel prevents SQL injection
+- **Row-Level Security**: All queries include user_id filter
+
+---
+
+## 🔧 Troubleshooting
+
+### Events Not Being Processed
+
+```bash
+# Check Dapr sidecar is running
+docker ps | grep dapr
+
+# Check Kafka topics exist
+docker exec redpanda rpk topic list
+
+# Check microservice logs
+docker logs phase-5-recurring-service-1
+docker logs phase-5-audit-service-1
+```
+
+### WebSocket Connection Issues
+
+```bash
+# Check websocket-service health
+curl http://localhost:8004/health
+
+# Test WebSocket connection
+wscat -c ws://localhost:8004/ws?user_id=test-user
+
+# Check SSE endpoint
+curl http://localhost:8004/api/sse/user-123
+```
+
+### Idempotency Issues (Duplicates)
+
+```bash
+# Check Redis state store
+docker exec redis redis-cli KEYS "processed-*"
+
+# View specific event
+docker exec redis redis-cli GET "processed-event-123-recurring-service"
+```
+
+---
+
+## 📚 Documentation
+
+### Phase 5 Documentation
+
+- **[DAPR_README.md](DAPR_README.md)** - Complete Dapr setup guide
+- **[MINIKUBE_STARTUP_GUIDE.md](../MINIKUBE_STARTUP_GUIDE.md)** - Minikube + Dapr instructions
+- **[specs/011-microservices-dapr/](../../specs/011-microservices-dapr/)** - Microservices specification
+
+### API Documentation
+
+Once running, access:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+---
+
+## 🎯 Current Status
+
+**Branch**: `011-microservices-dapr` ✅ Complete
+**Services**: 6 microservices + Dapr sidecars
+**Tasks**: 100+ (Phase 5 microservices)
+**Overall**: 684+ tasks across all 5 phases
+
+### Phase 5 Completion Summary
+
+**Advanced Features (Branch 010):**
+- ✅ Recurring tasks with automatic generation
+- ✅ Time-based reminders with timezone support
+- ✅ Flexible tagging system
+- ✅ Extended database schema
+
+**Microservices Architecture (Branch 011):**
+- ✅ 6 independent microservices
+- ✅ Dapr sidecar integration
+- ✅ Kafka/Redpanda event streaming
+- ✅ Real-time WebSocket + SSE updates
+- ✅ Idempotency with Dapr State Store
+- ✅ Complete audit trail
+- ✅ Helm charts for all services
+- ✅ Docker Compose for local development
+
+---
+
+**Project**: Phase 5 - Microservices with Dapr
+**Branch**: `011-microservices-dapr`
+**Architecture**: Event-Driven Microservices + Dapr + Kafka + Redis + WebSocket + FastAPI + Python 3.12+
+**Status**: ✅ **Complete - Production-Ready**

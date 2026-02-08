@@ -1,0 +1,19 @@
+
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "redpanda-0.redpanda.default.svc.cluster.local:9093"
+    - name: authRequired
+      value: "false"
+    # Remove consumeRetryEnabled to work around Dapr 1.16.8 bug where consumer gets stuck
+    # in retry loop blocking new messages from being processed
+    # See: https://github.com/dapr/dapr/issues/8796
+    - name: consumeRetryEnabled
+      value: "false"
